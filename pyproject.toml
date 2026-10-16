@@ -30,6 +30,8 @@ dependencies = [
   "fastapi>=0.110",        # MIT - REST API
   "uvicorn>=0.29",         # BSD-3-Clause - API server
   "pyproj>=3.6",           # MIT - coordinate transformation (ETRS89/UTM32 <-> WGS84)
+  "scipy>=1.11",           # BSD-3-Clause - depression labelling, Theil-Sen trend
+  "pillow>=10",            # MIT-CMU (HPND) - PNG map overlays
 ]
 
 [project.optional-dependencies]
