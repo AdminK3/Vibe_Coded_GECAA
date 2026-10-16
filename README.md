@@ -40,7 +40,50 @@ demo-c     not feasible                  52%  (open)
            decisive: Distance to groundwater - Check groundwater levels with the lower water authority or a monitoring well near the site.
 ```
 
-## Version 2 (start page)
+## Version 3: climate risk at the site (start page)
+
+Version 3 adds two analyses and a risk assessment to the permit check, all for any place in NRW with live open
+data. The CLIMADA risk engine (ETH Zürich) computes the damages; methods and scales come from the EU project CLIMAAX.
+
+| Tab | What it does | Data and methods |
+|---|---|---|
+| **Versickerung** | Permit check for troughs (K3 logic, see version 2) | ALKIS, BK50, protection zones |
+| **Starkregen** | Water depth per return period (10/30/100 years) and climate scenario (today, +1 K, +2 K), damage per building, expected annual damage, effect and benefit of the troughs drawn in the permit check | DGM1 (1 m, resampled to 2 m), ALKIS buildings and land use, KOSTRA-DWD-2020, JRC depth-damage curves (via CLIMAAX), **CLIMADA** ImpactCalc and CostBenefit |
+| **Hitze** | Heat stress at the site and observed hot days since 1961 with a robust trend | LANUK Klimaanalyse NRW (PET, night temperature, sealing), DWD 1 km grids, Theil-Sen trend |
+| **Risikobewertung** | The five CLIMAAX risk-assessment steps, Key Risk Assessment (severity now/future, urgency, resilience, priority) proposed from the analyses and editable, risk matrix | CLIMAAX handbook scales 1–4 |
+
+How the heavy-rain chain works (`src/gecaa/risk/`):
+
+1. **Terrain**: DGM1 from the NRW WCS for the analysis area plus a 100 m border; buildings from ALKIS are raised
+   0.5 m as obstacles (canopies excluded).
+2. **Rain**: KOSTRA-DWD-2020 for the 5 km cell of the site (duration 15 min, 60 min or 4 h); climate scenarios
+   scale it by 7 % per kelvin (Clausius-Clapeyron, Lenderink & van Meijgaard 2008). The CLIMAAX function
+   `magnitude_frequency_shift` shows how often today's 100-year rain occurs with +1 K and +2 K.
+3. **Runoff**: coefficients per ALKIS land-use class (oriented on DIN 1986-100), roofs 1.0.
+4. **Ponding and flow**: priority-flood (Barnes et al. 2014), D8 flow directions, depressions fill and spill
+   downstream in topological order with an exact volume balance; on flow paths the peak flow depth follows from
+   the rational method and Manning-Strickler. Result: water depth per cell, about 5 s for 300 × 300 cells.
+5. **Measures**: each trough with its roofs stores rain up to area × storage depth (default 0.3 m).
+6. **Damage**: water depth in a 2 m ring around each building, minus a threshold height (default 10 cm), JRC
+   curve for the building class, footprint × EU maximum damage (CLIMAAX values, price adjusted).
+7. **Impact**: CLIMADA builds a Hazard (one event per return period, banded frequencies), Exposures and
+   impact functions, computes the expected annual damage and, with a measure, `CostBenefit` over 30 years at
+   2 %. Without the worker the built-in engine computes the same quantities; a test checks that both agree.
+8. **Check**: the depths at the most affected buildings are compared with the BKG heavy-rain hazard map.
+
+Every result lists its assumptions with kind (Messwert, Normwert, Annahme, Vereinfachung) and source. It is a
+screening ("Senken- und Fließweganalyse"), not a hydrodynamic simulation; damages are an order of magnitude.
+
+**CLIMADA is GPL-3.0** and runs as a separate service in `services/climada_worker` (own licence, own Python 3.11
+environment). GECAA only exchanges JSON with it, so GECAA stays Apache-2.0. In Codespaces it installs itself in the
+background on first start; by hand: `services/climada_worker/install.sh` and `services/climada_worker/run.sh`,
+or `docker compose up`. The badge at the top right shows which engine is active.
+
+Other improvements: shared location bar for all tabs, dark mode, mobile layout, map toolbar (return period,
+scenario, with/without measure, flow paths, relief, opacity), SVG charts, project export as JSON, print view.
+Version 2 stays at `/v2`, version 1 at `/v1`.
+
+## Version 2
 
 Version 2 follows the K3 logic conventions and works anywhere in North Rhine-Westphalia
 with live open data. The interface and the report are in German.

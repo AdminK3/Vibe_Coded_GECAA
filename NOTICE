@@ -8,7 +8,8 @@ this repository), each under its own licence:
   pgmpy (MIT), NumPy (BSD-3-Clause), pandas (BSD-3-Clause),
   rasterio (BSD-3-Clause) with GDAL (MIT), Shapely (BSD-3-Clause),
   Pydantic (MIT), PyYAML (MIT), HTTPX (BSD-3-Clause), Jinja2 (BSD-3-Clause),
-  FastAPI (MIT), Uvicorn (BSD-3-Clause), pyproj (MIT) with PROJ (MIT).
+  FastAPI (MIT), Uvicorn (BSD-3-Clause), pyproj (MIT) with PROJ (MIT),
+  SciPy (BSD-3-Clause), Pillow (MIT-CMU).
 
 The web app bundles these libraries in src/gecaa/web/vendor, each with its
 licence file:
@@ -23,6 +24,24 @@ Version 2 queries these open services at run time (no data is bundled):
   BKG: Starkregengefahrenhinweise WMS (dl-de/by-2-0);
   OpenStreetMap Nominatim for address search (data (c) OpenStreetMap
   contributors, ODbL; used within the Nominatim usage policy).
+
+Version 3 (climate risk) additionally uses at run time:
+  Geobasis NRW: DGM1 terrain model WCS (dl-de/zero-2-0), ALKIS land use (WFS);
+  Deutscher Wetterdienst: KOSTRA-DWD-2020 design rainfall and annual hot-day grids
+  (opendata.dwd.de, CC BY 4.0);
+  LANUK NRW: Klimaanalyse NRW WMS (dl-de/zero-2-0);
+  BKG: Hinweiskarte Starkregengefahren, water depth (dl-de/by-2-0).
+
+Portions of src/gecaa/risk (damage.py, scenario.py, cra.py) and data/climaax are
+adapted from the CLIMAAX project (https://github.com/CLIMAAX: FLOODS, HEAVY_RAINFALL,
+crabook), licensed Apache-2.0 OR CC-BY-4.0, (c) the CLIMAAX consortium. The JRC
+depth-damage values originate from Huizinga, de Moel & Szewczyk (2017), EUR 28552 EN.
+
+CLIMADA (https://github.com/CLIMADA-project/climada_python, (c) ETH Zurich and
+contributors, GPL-3.0) is NOT part of GECAA. It runs as a separate service in
+services/climada_worker, which is itself licensed GPL-3.0-or-later (see
+services/climada_worker/LICENSE). GECAA exchanges only JSON data with it and also
+runs without it (built-in fallback engine).
 
 Legal texts retrieved from the federal legal information system
 (rechtsinformationen.bund.de / gesetze-im-internet.de) are official works

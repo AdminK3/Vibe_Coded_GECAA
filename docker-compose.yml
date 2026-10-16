@@ -8,6 +8,7 @@ services:
       - "8000:8000"
     environment:
       GECAA_HOME: /app
+      GECAA_CLIMADA_URL: http://climada-worker:8001
       # Point at your own site data layers (see data/samples/dataset.yaml):
       # GECAA_DATASET: /app/data/site/dataset.yaml
     volumes:
@@ -15,6 +16,13 @@ services:
       - snapshots:/app/data/knowledge/snapshots
       # Mount real site data here:
       # - ./my-site-data:/app/data/site:ro
+    restart: unless-stopped
+    depends_on: [climada-worker]
+
+  # CLIMADA risk engine (ETH Zürich, GPL-3.0) as a separate service; GECAA talks to it over HTTP only.
+  climada-worker:
+    build: services/climada_worker
+    expose: ["8001"]
     restart: unless-stopped
 
 volumes:

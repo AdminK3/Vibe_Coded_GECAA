@@ -61,6 +61,24 @@ groundwater at site scale (BK50 classes are used and marked "abgeleitet"); BK50 
 empty in sealed city centres, so kf and groundwater stay OPEN there; the WSG query uses one
 point per location; the DGM1 WCS (slope, sinks) is not used yet.
 
+## Version 3: climate risk
+
+```
+browser (app.html, v2.js, risk.js, charts.js)
+   │  /v2 permit check            /v3/risk/rain · /v3/heat · /v3/cra
+   ▼
+GECAA (Apache-2.0, FastAPI) ── risk/chain.py ── hydrology.py (priority-flood, D8, cascade, Manning)
+   │        │                               ├─ kostra.py (DWD)       ├─ damage.py (JRC/CLIMAAX)
+   │        │                               ├─ scenario.py (CLIMAAX) └─ raster_png.py (map overlays)
+   │        └─ geodata/nrw.py: DGM1 WCS, ALKIS WFS, BK50/WSG/Klimaanalyse/BKG WMS
+   │  JSON only
+   ▼
+services/climada_worker (GPL-3.0, own venv): CLIMADA Hazard, Exposures, ImpactCalc, CostBenefit
+```
+
+Data formats verified against the live services with `scripts/probe_sources.py`, `probe_kostra.py`,
+`probe_bkg.py` (KOSTRA grid is EPSG:3035, DWD hot days EPSG:31467, BKG depth in cm).
+
 ## Roadmap for the next slices
 
 1. **Expert review of the swale-trench blueprint** with the regulatory domain
