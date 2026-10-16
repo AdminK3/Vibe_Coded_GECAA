@@ -67,6 +67,7 @@ async function init() {
   renderSources();
   initEvents();
   await switchProvider(st.provider.id);
+  document.dispatchEvent(new CustomEvent("gecaa:ready"));
 }
 
 function renderBadges() {
@@ -86,7 +87,7 @@ function initMap() {
     `https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemapde_web_raster_${style}/default/GLOBAL_WEBMERCATOR/{z}/{y}/{x}.png`,
     { maxZoom: 21, maxNativeZoom: 18, attribution: '&copy; <a href="https://basemap.de" target="_blank" rel="noopener">basemap.de</a> / BKG (CC BY 4.0)' });
   const colour = basemap("farbe").addTo(map);
-  L.control.layers({ "basemap.de farbig": colour, "basemap.de grau": basemap("grau") }, null, { position: "bottomleft" }).addTo(map);
+  L.control.layers({ "basemap.de farbig": colour, "basemap.de grau": basemap("grau") }, null, { position: "topleft" }).addTo(map);
   map.setView([51.43, 7.66], 8);   // NRW
   map.pm.setGlobalOptions({ snappable: true, allowSelfIntersection: false });
   map.on("pm:create", (ev) => {
@@ -116,6 +117,7 @@ const unitStyle = (u, result) => {
 
 async function switchProvider(id) {
   st.provider = st.providers.find((p) => p.id === id);
+  document.dispatchEvent(new CustomEvent("gecaa:provider", { detail: id }));
   $("#provider-badge").textContent = `Daten: ${st.provider.label}`;
   Object.values(st.wms).forEach((l) => st.map.removeLayer(l));
   Object.values(st.demoOverlays).forEach((l) => st.map.removeLayer(l));
@@ -521,6 +523,7 @@ function switchTab(name) {
   document.querySelector(".panel").scrollTop = 0;
   setTimeout(() => st.map.invalidateSize(), 50);
   if (name === "logic") { initGraph(); if (st.cy) { st.cy.resize(); st.cy.fit(undefined, 8); } }
+  document.dispatchEvent(new CustomEvent("gecaa:tab", { detail: name }));
 }
 
 function initEvents() {

@@ -44,6 +44,11 @@ app.include_router(v3_router)
 
 @app.get("/", include_in_schema=False)
 def web_app():
+    return FileResponse(WEB_DIR / "app.html")
+
+
+@app.get("/v2", include_in_schema=False)
+def web_app_v2():
     return FileResponse(WEB_DIR / "v2.html")
 
 

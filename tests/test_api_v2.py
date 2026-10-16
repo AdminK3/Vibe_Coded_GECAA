@@ -81,7 +81,8 @@ def test_report_is_german_html(free_spot):
 
 
 def test_start_page_is_v2_and_v1_kept():
-    assert "/static/v2.js" in client.get("/").text
+    assert "/static/v2.js" in client.get("/").text and "/static/risk.js" in client.get("/").text
+    assert "/static/v2.js" in client.get("/v2").text
     assert "/static/app.js" in client.get("/v1").text
 
 

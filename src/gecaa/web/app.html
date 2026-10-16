@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>GECAA · Klimaanpassung am Standort</title>
+<!-- Open-source libraries, bundled locally: Leaflet (BSD-2-Clause), Leaflet-Geoman free (MIT), Cytoscape.js (MIT) -->
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/static/vendor/geoman/leaflet-geoman.css">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/v2.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<a class="skip" href="#panel">Zum Inhalt springen</a>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 4c5 7 8 11 8 15a8 8 0 0 1-16 0c0-4 3-8 8-15z"/><path d="M12 20a4 4 0 0 0 4 4"/></svg>
+    </span>
+    <div><strong>GECAA</strong><span class="sub">Klimaanpassung am Standort · Versickerung · Starkregen · Hitze</span></div>
+  </div>
+  <div class="badges" id="badges"></div>
+  <div class="top-actions">
+    <span class="engine-pill" id="engine-pill" title="Rechenkern für Schäden">Rechenkern …</span>
+    <button class="icon-btn top" id="theme-btn" type="button" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">◐</button>
+    <button class="icon-btn top" id="export-btn" type="button" title="Projekt speichern (JSON)" aria-label="Projekt speichern">⤓</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="panel" id="panel">
+    <section class="sitebar" aria-label="Standort">
+      <div class="row">
+        <input type="search" id="search" placeholder="Adresse in NRW, z. B. Marktplatz 1, Mettmann" aria-label="Adresse suchen">
+        <button class="btn secondary" type="button" id="search-btn">Suchen</button>
+      </div>
+      <ul class="hits" id="hits" hidden></ul>
+      <div class="row sitebar-row">
+        <label class="inline" for="provider">Daten</label>
+        <select id="provider" aria-label="Datenquelle"></select>
+        <button class="btn secondary" type="button" id="parcel-btn" title="Klicken Sie danach auf ein Flurstück in der Karte">Flurstück wählen</button>
+      </div>
+      <div class="site-card" id="parcel-card" hidden></div>
+      <p class="hint" id="zoom-hint">Zoomen Sie nah heran: ab Maßstab Straße werden Gebäude und Flurstücke geladen.</p>
+    </section>
+
+    <nav class="tabs scroll" role="tablist" aria-label="Bereiche">
+      <button role="tab" aria-selected="true" data-tab="check" id="tab-check">Versickerung</button>
+      <button role="tab" aria-selected="false" data-tab="rain" id="tab-rain">Starkregen</button>
+      <button role="tab" aria-selected="false" data-tab="heat" id="tab-heat">Hitze</button>
+      <button role="tab" aria-selected="false" data-tab="cra" id="tab-cra">Risikobewertung</button>
+      <button role="tab" aria-selected="false" data-tab="logic" id="tab-logic">Prüflogik</button>
+      <button role="tab" aria-selected="false" data-tab="sources" id="tab-sources">Quellen</button>
+    </nav>
+
+    <!-- 1 Versickerung (K3 permit check, v2 workflow) -->
+    <section class="tabpane" id="pane-check" role="tabpanel" aria-labelledby="tab-check">
+      <div class="step">
+        <h2><span class="num">1</span>Anlagenstandorte einzeichnen</h2>
+        <p class="hint">Zeichnen Sie jede geplante Mulde auf unbebauter Fläche ein. Klicken Sie danach auf Dächer, die in diesen Standort entwässern (Einzugsgebiet).</p>
+        <button class="btn secondary" type="button" id="draw-btn">+ Standort einzeichnen</button>
+        <div id="units"></div>
+      </div>
+      <form class="step" id="site-form">
+        <h2><span class="num">2</span>Angaben zum Grundstück</h2>
+        <div id="site-inputs"></div>
+        <button class="btn primary" id="assess-btn" type="submit" disabled>Prüfen</button>
+        <p class="error" id="assess-error" hidden></p>
+      </form>
+      <div id="result" hidden></div>
+    </section>
+
+    <!-- 2 Starkregen (CLIMADA) -->
+    <section class="tabpane" id="pane-rain" role="tabpanel" aria-labelledby="tab-rain" hidden>
+      <div class="lead">
+        <h2>Starkregenrisiko am Standort</h2>
+        <p class="hint">Senken- und Fließweganalyse auf dem Geländemodell (DGM1) mit dem Bemessungsregen nach KOSTRA-DWD-2020,
+          Schäden an Gebäuden mit <strong>CLIMADA</strong> (ETH Zürich) und JRC-Schadensfunktionen aus <strong>CLIMAAX</strong>.
+          Mulden aus der Versickerungsprüfung werden als Maßnahme gerechnet.</p>
+      </div>
+      <div class="card">
+        <div class="grid2">
+          <div><label for="rain-box">Analysegebiet</label>
+            <select id="rain-box"><option value="200">200 × 200 m</option><option value="400" selected>400 × 400 m</option><option value="600">600 × 600 m</option></select></div>
+          <div><label for="rain-duration">Regendauer</label>
+            <select id="rain-duration"><option value="15">15 min</option><option value="60" selected>60 min</option><option value="240">4 h</option></select></div>
+        </div>
+        <label class="opt-check"><input type="checkbox" id="rain-use-units" checked> Mulden aus der Versickerungsprüfung als Maßnahme rechnen <span class="count" id="rain-units-count"></span></label>
+        <details class="settings"><summary>Weitere Einstellungen</summary>
+          <div class="grid2">
+            <div><label for="rain-threshold">Schwellenhöhe (cm)</label><input type="number" id="rain-threshold" value="10" min="0" max="50" step="1"><small>Wasser bis zu dieser Höhe dringt nicht ein (Türschwellen).</small></div>
+            <div><label for="rain-sewer">Kanalnetz nimmt auf (mm)</label><input type="number" id="rain-sewer" value="0" min="0" max="50" step="1"><small>0 = ungünstiger Fall.</small></div>
+            <div><label for="rain-depth">Einstautiefe der Mulden (m)</label><input type="number" id="rain-depth" value="0.3" min="0.05" max="1" step="0.05"></div>
+            <div><label for="rain-cost">Kosten der Maßnahme (€)</label><input type="number" id="rain-cost" min="0" step="1000" placeholder="optional"><small>Nur mit Ihrer Angabe wird ein Nutzen-Kosten-Verhältnis gerechnet.</small></div>
+          </div>
+        </details>
+        <button class="btn primary" type="button" id="rain-run">Starkregen analysieren</button>
+        <ol class="stepper" id="rain-steps" hidden></ol>
+        <p class="error" id="rain-error" hidden></p>
+      </div>
+      <div id="rain-result" hidden></div>
+    </section>
+
+    <!-- 3 Hitze -->
+    <section class="tabpane" id="pane-heat" role="tabpanel" aria-labelledby="tab-heat" hidden>
+      <div class="lead">
+        <h2>Hitze am Standort</h2>
+        <p class="hint">Beobachtete heiße Tage (DWD, 1-km-Raster, seit 1961) mit robustem Trend und die Klimaanalyse NRW
+          (Wärmebelastung PET am Tag, Lufttemperatur in der Nacht) – Methode und Skalen nach CLIMAAX.</p>
+      </div>
+      <button class="btn primary" type="button" id="heat-run">Hitze am Kartenmittelpunkt analysieren</button>
+      <p class="error" id="heat-error" hidden></p>
+      <div id="heat-result" hidden></div>
+    </section>
+
+    <!-- 4 Risikobewertung (CLIMAAX CRA) -->
+    <section class="tabpane" id="pane-cra" role="tabpanel" aria-labelledby="tab-cra" hidden>
+      <div class="lead">
+        <h2>Klimarisikobewertung nach CLIMAAX</h2>
+        <p class="hint">Die fünf Schritte des CLIMAAX-Handbuchs. Die Bewertung der Schlüsselrisiken wird aus den Analysen vorgeschlagen und bleibt Ihre Entscheidung.</p>
+      </div>
+      <ol class="cra-steps" id="cra-steps"></ol>
+      <div id="cra-table"></div>
+      <div id="cra-matrix"></div>
+    </section>
+
+    <!-- 5 Prüflogik -->
+    <section class="tabpane" id="pane-logic" role="tabpanel" aria-labelledby="tab-logic" hidden>
+      <div id="logic-head"></div>
+      <div class="row" style="margin:8px 0"><label class="inline" for="graph-unit">Ergebnis zeigen für</label><select id="graph-unit"><option value="">– noch nicht geprüft –</option></select></div>
+      <div id="graph" aria-label="Prüflogik als Graph"></div>
+      <div id="node-detail" class="node-detail"></div>
+      <div id="logic-tables"></div>
+    </section>
+
+    <!-- 6 Quellen -->
+    <section class="tabpane" id="pane-sources" role="tabpanel" aria-labelledby="tab-sources" hidden>
+      <div class="step">
+        <h2>Bundesrecht, live</h2>
+        <p class="hint">Der Knowledge Agent holt den aktuellen Wortlaut der Bundesvorschriften aus dem Rechtsinformationssystem des Bundes (NeuRIS, Testphase), speichert ihn mit Datum und Prüfsumme und meldet Änderungen.</p>
+        <button class="btn primary" id="refresh-btn" type="button">Bundesrecht auf Änderungen prüfen</button>
+        <div id="refresh-result"></div>
+      </div>
+      <div id="engines"></div>
+      <div id="data-sources"></div>
+      <div id="provisions"></div>
+    </section>
+  </aside>
+
+  <main class="mapwrap">
+    <div id="map" aria-label="Karte"></div>
+    <button class="layers-toggle" id="layers-toggle" type="button" aria-expanded="false" aria-controls="layers">Ebenen</button>
+    <div class="layers" id="layers" aria-label="Kartenebenen"></div>
+    <div class="map-legend" id="map-legend" hidden></div>
+    <div class="map-toolbar" id="map-toolbar" hidden></div>
+  </main>
+</div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<script src="/static/vendor/geoman/leaflet-geoman.min.js"></script>
+<script src="/static/vendor/cytoscape/cytoscape.min.js"></script>
+<script src="/static/v2.js"></script>
+<script src="/static/charts.js"></script>
+<script src="/static/risk.js"></script>
+</body>
+</html>

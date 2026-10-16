@@ -90,11 +90,12 @@ def compute(p: dict) -> dict:
             cb = CostBenefit()
             cb.calc(haz, ent, future_year=int(yrs[-1]), assign_centroids=False)
             benefit = float(cb.benefit["Maßnahme"])
+            ratio = float(cb.cost_ben_ratio["Maßnahme"])
         out["measure"] = {"aai_agg": float(imp_m.aai_agg),
                           "freq_curve": [{"rp": r, "eur": float(v)} for r, v in zip(rps, imp_m.at_event)],
                           "benefit_annual": float(imp.aai_agg - imp_m.aai_agg), "benefit_npv": benefit,
                           "bcr": (benefit / float(cost)) if cost else None,
-                          "climada_cost_benefit_ratio": float(cb.cost_ben_ratio["Maßnahme"]) if cost else None}
+                          "climada_cost_benefit_ratio": ratio if cost and np.isfinite(ratio) else None}
     return out
 
 

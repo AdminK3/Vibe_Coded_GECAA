@@ -12,3 +12,12 @@ def test_hand_calculation():
     freq = [1 / 10 - 1 / 30, 1 / 30 - 1 / 100, 1 / 100]
     expected = 500000 * (0.05 * freq[0] + 0.10 * freq[1] + 0.20 * freq[2])
     assert abs(r["aai_agg"] - expected) < 1e-6
+
+
+def test_zero_benefit_is_json_safe():
+    import json
+    p = {"rps": [10], "exposures": [{"id": "a", "lon": 6.9, "lat": 51.2, "value": 1.0, "cls": "x"}],
+         "impfs": {"x": {"depth": [0, 1], "mdr": [0, 1]}}, "depth": [[0.0]], "measure_depth": [[0.0]], "cost_eur": 1000}
+    r = impact.compute(p)
+    json.dumps(r, allow_nan=False)
+    assert r["measure"]["benefit_npv"] == 0 and r["measure"]["climada_cost_benefit_ratio"] is None

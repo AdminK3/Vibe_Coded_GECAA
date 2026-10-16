@@ -311,15 +311,19 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
 
     base_sc = req.scenarios[0]
     imp = impacts[base_sc]
+    rp_keys = list(map(str, req.rps))
     b_out = []
     for i, b in enumerate(buildings):
-        d = imp["depth"][i]
+        by_sc = {sc: dict(zip(rp_keys, [round(x, 2) for x in impacts[sc]["depth"][i]])) for sc in req.scenarios}
+        by_sc_m = ({sc: dict(zip(rp_keys, [round(x, 2) for x in impacts[sc]["measure_depth"][i]]))
+                    for sc in req.scenarios} if measure_masks else None)
         b_out.append({"id": b.id, "label": b.label, "cls": b.cls, "cls_de": damage.CLASS_DE[b.cls],
                       "footprint_m2": b.footprint_m2, "value_eur": round(b.value_eur, -2),
-                      "depth": dict(zip(map(str, req.rps), [round(x, 2) for x in d])),
-                      "depth_measure": (dict(zip(map(str, req.rps), [round(x, 2) for x in imp["measure_depth"][i]]))
-                                        if imp.get("measure_depth") else None),
-                      "eai_eur": round(imp["eai"].get(b.id, 0.0), 0), "geometry": b.geometry})
+                      "depth": by_sc[base_sc], "depth_measure": by_sc_m[base_sc] if by_sc_m else None,
+                      "depth_by_scenario": by_sc, "depth_measure_by_scenario": by_sc_m,
+                      "eai_eur": round(imp["eai"].get(b.id, 0.0), 0),
+                      "eai_by_scenario": {sc: round(impacts[sc]["eai"].get(b.id, 0.0), 0) for sc in req.scenarios},
+                      "geometry": b.geometry})
     b_out.sort(key=lambda b: -b["eai_eur"])
 
     def ev_summary(ev, variant):
@@ -361,7 +365,7 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
         "run_id": run_id, "bounds": bounds, "res_m": res, "grid": list(shape_rc), "center": [req.lon, req.lat],
         "box_wgs": to_wgs(inner), "rain": {"mm": rain, "source": rain_source, "duration_min": req.duration_min,
                                           "kostra": kostra_info},
-        "rps": req.rps, "scenarios": req.scenarios, "events": ev_out,
+        "rps": req.rps, "scenarios": req.scenarios, "events": ev_out, "threshold_m": req.threshold_m,
         "impact": {sc: {k: v for k, v in impacts[sc].items() if k not in ("depth", "measure_depth", "eai")}
                    for sc in req.scenarios},
         "buildings": b_out, "measures": [{"id": m.id, "name": m.name, "storage_m3": round(s, 1),
