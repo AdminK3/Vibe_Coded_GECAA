@@ -89,7 +89,7 @@
 
   {% for u in r.units %}
   <h3>{{ u.name }}: {{ RESULT_DE[u.result.value] }}</h3>
-  <ul class="tight">{% for c in u.checks %}<li>{{ sym(c.result.value) }} <strong>{{ c.id }}</strong> {{ c.text }}{% if c.p_passed is not none and c.result.value != 'OPEN' and c.p_passed > 0 and c.p_passed < 1 %} <span class="small">(Datensicherheit: {{ '%.0f'|format(c.p_passed*100) }} %)</span>{% endif %}</li>{% endfor %}</ul>
+  <ul class="tight">{% for c in u.checks %}<li>{{ sym(c.result.value) }} <strong>{{ c.id }}</strong> {{ c.text }}{% if c.p_passed is not none and c.result.value != 'OPEN' and c.p_passed > 0 and c.p_passed < 1 %} <span class="small">(Wahrscheinlichkeit erfüllt: {{ '%.0f'|format(c.p_passed*100) }} %)</span>{% endif %}</li>{% endfor %}</ul>
   <div class="tbl"><table>
     <tr><th>Eingabe</th><th>Wert</th><th>Quelle</th><th>Datengüte</th></tr>
     {% for i in u.inputs %}<tr><td>{{ labels.get(i.abbr, i.abbr) }}</td><td>{{ fmtv(i) }}</td><td>{{ i.source or '–' }}{% if i.note %}<br><span class="small">{{ i.note }}</span>{% endif %}</td><td>{% if i.value is not none %}{{ qtag(i.quality.value) }}{% else %}<span class="tag offen">fehlt</span>{% endif %}</td></tr>{% endfor %}

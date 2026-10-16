@@ -213,7 +213,12 @@ def probabilities(spec: LogicSpec, values: dict[str, InputValue], results: list[
                 if a is None or b is None:
                     return None
                 return {"sub": a - b, "add": a + b, "mul": a * b, "div": a / np.where(b == 0, np.nan, b)}[c.op]
-        return draws.get(ref)
+        if ref in draws:
+            return draws[ref]
+        iv = values.get(ref)                       # input without a distribution: a fixed value
+        if iv is not None and isinstance(iv.value, (int, float)) and not isinstance(iv.value, bool):
+            return np.full(N_SAMPLES, float(iv.value))
+        return None
 
     joint = np.ones(N_SAMPLES, dtype=bool)
     joint_defined = True
@@ -226,6 +231,9 @@ def probabilities(spec: LogicSpec, values: dict[str, InputValue], results: list[
             lo = resolve(check.low) if check.low else None
             hi = resolve(check.high) if check.high else None
             if v is None:
+                passed = res.result == Result.PASSED
+                res.p_passed = 1.0 if passed else 0.0
+                joint &= passed
                 continue
             ok = np.ones(N_SAMPLES, dtype=bool)
             if lo is not None:

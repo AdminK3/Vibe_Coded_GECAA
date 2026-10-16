@@ -109,3 +109,65 @@ def test_assessment_with_nrw_answers():
     assert checks["CH02"] == "PASSED"          # 1.4e-6 m/s
     assert checks["CH03"] == "BLOCKED"         # 0.8 - 0.3 < 1.0 m
     assert checks["CH05"] == "PASSED"
+
+
+# ---- regressions from the independent review
+
+SERVICE_ERROR = """<?xml version="1.0"?><ServiceExceptionReport><ServiceException>Layer not queryable</ServiceException></ServiceExceptionReport>"""
+
+
+def test_service_error_is_not_no_zone():
+    with pytest.raises(RuntimeError):
+        provider(lambda u, p: SERVICE_ERROR).protection_zone(LOC)
+    with pytest.raises(RuntimeError):
+        provider(lambda u, p: "<html><body>502 Bad Gateway</body></html").protection_zone(LOC)
+
+
+def test_failed_zone_lookup_gives_open_in_assessment():
+    from gecaa.api_v2 import logics
+    from gecaa.k3.service import AssessmentRequest, run_assessment
+
+    def ans(url, params):
+        if url == nrw.WSG_WMS:
+            return SERVICE_ERROR
+        return BUILDINGS if url == nrw.ALKIS_WFS else BK50
+    req = AssessmentRequest(units=[{"id": "S1", "name": "M", "location": to_wgs(box(356030, 5645030, 356040, 5645040))}])
+    res = run_assessment(logics()["k3_dwa_a_138_1_mre"], provider(ans), req)
+    assert next(c for c in res.units[0].checks if c.id == "CH05").result.value == "OPEN"
+
+
+def test_outside_nrw_stays_open():
+    from gecaa.api_v2 import logics
+    from gecaa.k3.service import AssessmentRequest, run_assessment
+    munich = {"type": "Polygon", "coordinates": [[[11.575, 48.137], [11.5751, 48.137], [11.5751, 48.1371], [11.575, 48.1371], [11.575, 48.137]]]}
+    req = AssessmentRequest(units=[{"id": "S1", "name": "M", "location": munich,
+                                    "inputs": {"KF": 1e-5, "GWF": 5, "TA": 0.5}}], site_inputs={"ALT": "keine", "KT": 0})
+    res = run_assessment(logics()["k3_dwa_a_138_1_mre"], provider(lambda u, p: EMPTY), req)
+    assert res.units[0].result.value == "OPEN"
+    assert {c.id for c in res.units[0].checks if c.result.value == "OPEN"} >= {"CH01", "CH04", "CH05"}
+
+
+def test_building_outage_gives_open_not_crash():
+    from gecaa.api_v2 import logics
+    from gecaa.k3.service import AssessmentRequest, run_assessment
+
+    def ans(url, params):
+        if url == nrw.ALKIS_WFS:
+            raise RuntimeError("timeout")
+        return BK50 if url == nrw.BK50_WMS else EMPTY
+    req = AssessmentRequest(units=[{"id": "S1", "name": "M", "location": LOC}])
+    res = run_assessment(logics()["k3_dwa_a_138_1_mre"], provider(ans), req)
+    assert next(c for c in res.units[0].checks if c.id == "CH01").result.value == "OPEN"
+
+
+def test_kf_zero_is_missing_and_not_rounded_across_limit():
+    zero = provider(lambda u, p: BK50.replace('KF="12,5"', 'KF="0"')).kf(LOC)
+    assert zero.value is None
+    edge = provider(lambda u, p: BK50.replace('KF="12,5"', 'KF="8,62"')).kf(LOC)
+    assert edge.value < 1e-6                     # 9.98e-7 m/s must stay below the 1e-6 limit
+
+
+def test_parcel_without_hit_is_none():
+    p = provider(lambda u, params: GML)
+    lon, lat = to_wgs(box(356100, 5645100, 356101, 5645101).centroid)["coordinates"]
+    assert p.parcel_at(lon, lat) is None

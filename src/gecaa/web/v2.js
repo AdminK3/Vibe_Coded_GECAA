@@ -222,7 +222,7 @@ function addUnit(layer) {
   layer.on("click", (e) => { L.DomEvent.stop(e); setActive(u); });
   layer.on("pm:edit", () => renderUnits());
   setActive(u);
-  layer.bindTooltip(() => u.name, { permanent: false });
+  layer.bindTooltip(() => esc(u.name), { permanent: false });
 }
 
 function setActive(u) {
@@ -238,7 +238,8 @@ function toggleRoof(id) {
     return;
   }
   const r = st.active.roofs;
-  r.has(id) ? r.delete(id) : r.add(id);
+  if (r.has(id)) r.delete(id);
+  else { st.units.forEach((x) => x.roofs.delete(id)); r.add(id); }   // a roof drains into one location only
   refreshRoofStyles();
   renderUnits();
 }
@@ -340,7 +341,7 @@ function renderResult(r) {
       <div class="uh">${sym(u.result)} ${esc(u.name)} <span class="c-${u.result}" style="margin-left:auto;font-weight:600">${esc(RESULT_DE[u.result])}</span></div>
       <div class="checks">${u.checks.map((c) => `<div class="chk">${sym(c.result)}<div><div class="q">${esc(c.id)} ${esc(c.question)}${c.derived ? ` <span class="tagd">abgeleitet</span>` : ""}</div>
         <div>${esc(c.text)}</div>
-        ${c.value_display != null ? `<div class="v">Ist: ${esc(c.value_display)}${c.threshold_display ? ` · Soll: ${esc(c.threshold_display)}` : ""}${c.p_passed != null && c.p_passed > 0 && c.p_passed < 1 ? ` · Datensicherheit ${Math.round(c.p_passed * 100)} %` : ""}</div>` : ""}
+        ${c.value_display != null ? `<div class="v">Ist: ${esc(c.value_display)}${c.threshold_display ? ` · Soll: ${esc(c.threshold_display)}` : ""}${c.p_passed != null && c.p_passed > 0 && c.p_passed < 1 ? ` · Wahrscheinlichkeit erfüllt ${Math.round(c.p_passed * 100)} % (aus der Unsicherheit der Kartendaten)` : ""}</div>` : ""}
         ${c.inputs_used.length ? `<div class="v">${c.inputs_used.filter((x) => x.value != null).map((x) => `${esc(label(x.abbr))}: <span class="dq ${dqClass(x.quality)}">${esc(x.quality)}</span> ${esc(x.source || "")}`).join("<br>")}</div>` : ""}
         ${c.basis.length ? `<div class="cites">${c.basis.filter((b) => st.provisions[b]).map((b) => `<button class="cite" type="button" data-prov="${esc(b)}">${esc(st.provisions[b].citation)}</button>`).join("")}</div>` : ""}
       </div></div>`).join("")}
@@ -368,6 +369,10 @@ async function openReport() {
   const win = window.open("", "_blank");
   try {
     const res = await fetch(`/v2/report?provider=${st.provider.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request()) });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(typeof body.detail === "string" ? body.detail : `HTTP ${res.status}`);
+    }
     const html = await res.text();
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     if (win) win.location = url; else download("gecaa-bericht.html", html, "text/html");

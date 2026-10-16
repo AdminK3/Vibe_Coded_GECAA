@@ -83,3 +83,46 @@ def test_report_is_german_html(free_spot):
 def test_start_page_is_v2_and_v1_kept():
     assert "/static/v2.js" in client.get("/").text
     assert "/static/app.js" in client.get("/v1").text
+
+
+# ---- regressions from the independent review
+
+def test_bbox_must_be_ordered_and_finite():
+    assert client.get("/v2/buildings?provider=synthetic&bbox=9.4,50.4,5.9,52.5").status_code == 422
+    assert client.get("/v2/buildings?provider=synthetic&bbox=nan,50,7,51").status_code == 422
+
+
+def test_bad_inputs_are_rejected(free_spot):
+    base = {"units": [{"id": "S1", "name": "M", "location": free_spot}]}
+    for bad in ({"XX": 1}, {"TA": "nan"}, {"TA": -1}, {"TA": "abc"}):
+        r = client.post("/v2/assess?provider=synthetic", json={**base, "site_inputs": bad})
+        assert r.status_code == 422, bad
+    r = client.post("/v2/assess?provider=synthetic", json={**base, "site_inputs": {"ALT": "vielleicht"}})
+    assert r.status_code == 422
+
+
+def test_location_must_be_a_real_area():
+    point = {"type": "Point", "coordinates": [6.94, 51.255]}
+    r = client.post("/v2/assess?provider=synthetic", json={"units": [{"id": "S1", "name": "M", "location": point}]})
+    assert r.status_code == 422
+    huge = {"type": "Polygon", "coordinates": [[[6.9, 51.2], [7.0, 51.2], [7.0, 51.3], [6.9, 51.3], [6.9, 51.2]]]}
+    r = client.post("/v2/assess?provider=synthetic", json={"units": [{"id": "S1", "name": "M", "location": huge}]})
+    assert r.status_code == 422
+
+
+def test_too_many_units(free_spot):
+    units = [{"id": f"S{i}", "name": "M", "location": free_spot} for i in range(21)]
+    assert client.post("/v2/assess?provider=synthetic", json={"units": units}).status_code == 422
+
+
+def test_report_without_units_is_422():
+    assert client.post("/v2/report?provider=synthetic", json={"units": []}).status_code == 422
+
+
+def test_blocked_check_never_shows_high_pass_probability(free_spot):
+    req = {"units": [{"id": "S1", "name": "M", "location": free_spot, "inputs": {"TA": 0.5, "GWF": 1.2}}],
+           "site_inputs": {"ALT": "keine", "KT": 0}}
+    unit = client.post("/v2/assess?provider=synthetic", json=req).json()["units"][0]
+    ch03 = next(c for c in unit["checks"] if c["id"] == "CH03")
+    assert ch03["result"] == "BLOCKED" and ch03["p_passed"] == 0.0
+    assert unit["p_passed"] in (0.0, None)

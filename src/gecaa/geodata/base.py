@@ -85,7 +85,7 @@ def geometry_facts(location: dict, buildings: dict) -> UnitGeometry:
     overlap, dist = [], None
     for f in buildings.get("features", []):
         b = to_utm(f["geometry"])
-        if b.intersects(loc) and b.intersection(loc).area > 0.01:
+        if b.intersects(loc) and (loc.area < 0.01 or b.intersection(loc).area > 0.01):
             overlap.append(str(f.get("properties", {}).get("id", "")))
         d = b.distance(loc)
         dist = d if dist is None else min(dist, d)

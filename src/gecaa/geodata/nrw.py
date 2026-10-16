@@ -122,8 +122,11 @@ def parse_feature_info(xml_text: str) -> list[dict]:
     """Attribute sets from a GetFeatureInfo answer: ESRI <FIELDS a="..."/> or <Field><FieldName/><FieldValue/>."""
     try:
         root = ET.fromstring(xml_text.encode("utf-8") if isinstance(xml_text, str) else xml_text)
-    except ET.ParseError:
-        return []
+    except ET.ParseError as exc:   # HTML error page or broken answer: not the same as "nothing here"
+        raise RuntimeError("Antwort des Kartendienstes nicht lesbar") from exc
+    if _local(root.tag) in ("ServiceExceptionReport", "ExceptionReport"):
+        msg = " ".join((e.text or "").strip() for e in root.iter())
+        raise RuntimeError(f"Kartendienst meldet einen Fehler: {msg.strip()[:200]}")
     feats = []
     for el in root.iter():
         name = _local(el.tag)
@@ -191,13 +194,21 @@ class NRWProvider:
             r = httpx.get(url, params=params, headers=UA, timeout=self.timeout)
             r.raise_for_status()
             text = r.text
+            if "ExceptionReport" in text[:500] or text.lstrip()[:1] != "<" or "<html" in text[:300].lower():
+                return text                      # never cache errors
             if path:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(text, encoding="utf-8")
+                self._prune_cache()
         if len(self._mem) > 500:
             self._mem.clear()
         self._mem[key] = (now, text)
         return text
+
+    def _prune_cache(self, keep: int = 5000):
+        files = sorted(self.cache_dir.glob("*.xml"), key=lambda p: p.stat().st_mtime)
+        for old in files[:-keep] if len(files) > keep else []:
+            old.unlink(missing_ok=True)
 
     def _wfs(self, type_name: str, bbox_utm: tuple[float, float, float, float], count: int = 1000) -> list[dict]:
         x0, y0, x1, y1 = (round(v, 2) for v in bbox_utm)
@@ -226,7 +237,7 @@ class NRWProvider:
             return None
         pt = to_utm({"type": "Point", "coordinates": [lon, lat]})
         feats = self._wfs("Flurstueck", (pt.x - 1, pt.y - 1, pt.x + 1, pt.y + 1), count=20)
-        hit = next((f for f in feats if f["geometry"].covers(pt)), feats[0] if feats else None)
+        hit = next((f for f in feats if f["geometry"].covers(pt)), None)
         if not hit:
             return None
         p = hit["properties"]
@@ -254,7 +265,7 @@ class NRWProvider:
     def _bk50(self, location: dict) -> dict | None:
         pt = self._point(location)
         feats = self._feature_info(BK50_WMS, "Versickerungseignung", pt.x, pt.y)
-        f = next((x for x in feats if any(str(v).strip() not in ("", "0", "Null") for k, v in x.items() if k.upper() in ("KF", "TYP_TEXT", "GW_CODE"))), None)
+        f = next((x for x in feats if str(x.get("TYP_TEXT", "")).strip()), None)
         return f
 
     def kf(self, location):
@@ -267,16 +278,17 @@ class NRWProvider:
         kf_cmd = _num(f.get("KF"))
         if kf_cmd is None:
             return InputValue(abbr="KF", value=None, unit="m/s", source=src, level="unit", note="kein kf-Wert in der BK50")
-        note = f"BK50: {kf_cmd:g} cm/d".replace(".", ",")
         if kf_cmd <= 0:
-            kf_cmd, note = 1.0, note + " (Klasse sehr gering, < 1 cm/d; Klassenobergrenze verwendet, abgeleitet)"
+            return InputValue(abbr="KF", value=None, unit="m/s", source=src, level="unit",
+                              note="BK50 gibt 0 cm/d an (sehr gering oder keine Angabe). Ein Versickerungsversuch liefert den Wert.")
+        note = f"BK50: {kf_cmd:g} cm/d".replace(".", ",")
         kf_ms = kf_cmd / 100 / 86400
         soil = " · ".join(x for x in (f.get("TYP_TEXT"), f.get("ART_TEXT")) if x)
         sic = f.get("SIC")
         note += f"; Boden: {soil}" if soil else ""
         note += f"; Versickerungseignung {sic}" if sic else ""
         note += ". Maßstab 1:50.000 – Wert vor Ort prüfen."
-        return InputValue(abbr="KF", value=float(f"{kf_ms:.2g}"), unit="m/s",
+        return InputValue(abbr="KF", value=float(f"{kf_ms:.4g}"), unit="m/s",
                           distribution=("log10normal", math.log10(kf_ms), 0.5),
                           source=src, level="unit", quality=Quality.mittel, note=note)
 
@@ -299,7 +311,8 @@ class NRWProvider:
                     f"Als Flurabstand zum MHGW wird die Oberkante {lo:g} m verwendet (abgeleitet, auf der sicheren Seite).")
             if flag:
                 note += f" Grundwasser {flag}."
-            return InputValue(abbr="GWF", value=lo, unit="m", distribution=("uniform", lo, hi), source=src, level="unit",
+            # no distribution: the class gives a range of mean levels, not an uncertainty of the checked value
+            return InputValue(abbr="GWF", value=lo, unit="m", source=src, level="unit",
                               quality=Quality.mittel, note=note)
         no_gw = str(f.get("GW_TIEFE", "")).strip() in ("99", "99.0")
         if cls == 0 or (cls is not None and cls >= 5) or (cls is None and no_gw):
