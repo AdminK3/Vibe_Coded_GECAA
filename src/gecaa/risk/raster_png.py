@@ -43,8 +43,31 @@ def hillshade(dem: np.ndarray, res: float, azimuth: float = 315, altitude: float
     return np.clip(shaded, 0, 1)
 
 
-def hillshade_png(dem: np.ndarray, res: float) -> bytes:
-    hs = hillshade(dem, res)
+def mercator_warper(transform, shape):
+    """Function that warps an EPSG:25832 grid to EPSG:3857, plus the Leaflet bounds [[S, W], [N, E]]."""
+    from pyproj import Transformer
+    from rasterio.warp import Resampling, calculate_default_transform, reproject
+
+    h, w = shape
+    left, top = transform.c, transform.f
+    right, bottom = left + w * transform.a, top + h * transform.e
+    dst_tr, dw, dh = calculate_default_transform("EPSG:25832", "EPSG:3857", w, h, left, bottom, right, top)
+
+    def warp(arr: np.ndarray) -> np.ndarray:
+        out = np.zeros((dh, dw), dtype="float32")
+        reproject(arr.astype("float32"), out, src_transform=transform, src_crs="EPSG:25832", dst_transform=dst_tr,
+                  dst_crs="EPSG:3857", resampling=Resampling.nearest, src_nodata=None, dst_nodata=0)
+        return out
+
+    to_ll = Transformer.from_crs("EPSG:3857", "EPSG:4326", always_xy=True)
+    w_, s_ = to_ll.transform(dst_tr.c, dst_tr.f + dh * dst_tr.e)
+    e_, n_ = to_ll.transform(dst_tr.c + dw * dst_tr.a, dst_tr.f)
+    return warp, [[s_, w_], [n_, e_]]
+
+
+def hillshade_png(dem: np.ndarray, res: float = 1.0, shaded: bool = False) -> bytes:
+    """`shaded=True`: `dem` is already a hillshade (0..1), e.g. after warping."""
+    hs = dem if shaded else hillshade(dem, res)
     rgba = np.zeros(dem.shape + (4,), np.uint8)
     g = (hs * 255).astype(np.uint8)
     rgba[..., 0] = rgba[..., 1] = rgba[..., 2] = g

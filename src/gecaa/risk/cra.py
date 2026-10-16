@@ -57,7 +57,8 @@ def suggest(rain: dict | None, heat: dict | None, capacity: int = 2) -> list[dic
         urg = _clamp(now + (1 if fut > now else 0) - (1 if now <= 1 else 0))
         rows.append({"hazard": "Starkregen", "severity_now": now, "severity_future": fut, "urgency": urg,
                      "capacity": capacity, "priority": priority(now, fut, urg, capacity),
-                     "basis": f"Wassertiefen an Gebäuden bei {rp_max}-jährlichem Regen (heute und +2 K)"})
+                     "basis": f"Wassertiefen an Gebäuden bei {rp_max}-jährlichem Regen"
+                              + (" (heute und +2 K)" if rain.get("buildings_future") else " (nur heute berechnet)")})
     if heat:
         ca = heat.get("climate_analysis") or {}
         pet = ca.get("pet_typisch")

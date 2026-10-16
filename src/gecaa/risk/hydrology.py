@@ -78,6 +78,7 @@ class Depression:
     id: int
     cells: np.ndarray          # flat indices
     capacity_m3: float
+    outlet: int = -1           # first cell below the spill point (-1 = off grid)
     inflow_m3: float = 0.0
     stored_m3: float = 0.0
     level: float | None = None
@@ -185,6 +186,7 @@ def ponding(dem: np.ndarray, cell: float, rain_mm: float, runoff_coeff: np.ndarr
         i, seen = start, 0
         while i >= 0 and lab[i] == d.id and seen < n:
             i = recv[i]; seen += 1
+        d.outlet = int(i)
         d.downstream = None if i < 0 else (int(target[i]) or None)
 
     # direct runoff into each depression (including rain falling on it)
@@ -222,6 +224,19 @@ def ponding(dem: np.ndarray, cell: float, rain_mm: float, runoff_coeff: np.ndarr
                 deps[d.downstream].inflow_m3 += spill
             else:
                 off_grid += spill
+
+    # overflow of full depressions runs on along the flow path below the outlet
+    spill_at = np.zeros(n)
+    for d in deps.values():
+        spill = d.inflow_m3 - d.stored_m3
+        if spill > 0 and d.outlet >= 0:
+            spill_at[d.outlet] += spill
+    if spill_at.any():
+        acc = runoff_flat + spill_at
+        for i in order[::-1]:
+            r = recv[i]
+            if r >= 0 and not lab[i]:
+                acc[r] += acc[i]
 
     depth = np.zeros(n)
     z = dem.ravel()

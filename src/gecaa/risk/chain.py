@@ -20,6 +20,7 @@ from shapely.geometry import box, mapping, shape
 from shapely.ops import unary_union
 
 from ..geodata.base import to_utm, to_wgs
+from .kostra import DURATIONS, RPS as KOSTRA_RPS
 from . import damage, engine_client, raster_png, scenario
 from .hydrology import d8_receivers, ponding, priority_flood
 
@@ -70,7 +71,7 @@ class RainRequest(BaseModel):
     lat: float = Field(ge=-90, le=90)
     box_m: float = Field(400, ge=100, le=800)
     res_m: float = Field(2.0, ge=1.0, le=5.0)
-    duration_min: int = 60
+    duration_min: int = Field(60, description=f"KOSTRA-Dauerstufe in Minuten: {DURATIONS}")
     rps: list[int] = Field(default_factory=lambda: [10, 30, 100], min_length=1, max_length=5)
     scenarios: list[str] = Field(default_factory=lambda: ["heute", "+1 K", "+2 K"], min_length=1, max_length=3)
     sewer_mm: float = Field(0.0, ge=0, le=50)          # rain the sewer takes away during the event (mm)
@@ -79,6 +80,24 @@ class RainRequest(BaseModel):
     measures: list[MeasureIn] = Field(default_factory=list, max_length=20)
     cost_eur: float | None = Field(None, gt=0, le=1e9)
     prefer_worker: bool = True
+
+    @field_validator("duration_min")
+    @classmethod
+    def _dur(cls, v):
+        if v not in DURATIONS:
+            raise ValueError(f"Dauerstufe muss eine KOSTRA-Stufe sein: {DURATIONS}")
+        return v
+
+    @field_validator("rain_override_mm")
+    @classmethod
+    def _rain(cls, v):
+        if v is None:
+            return v
+        if len(v) > len(KOSTRA_RPS) or any(k not in KOSTRA_RPS for k in v):
+            raise ValueError(f"Regenhöhen nur für Wiederkehrintervalle {KOSTRA_RPS}")
+        if any(not (math.isfinite(x) and 0 < x <= 300) for x in v.values()):
+            raise ValueError("Regenhöhen müssen zwischen 0 und 300 mm liegen")
+        return v
 
     @field_validator("rps")
     @classmethod
@@ -101,6 +120,10 @@ def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_s
          "text": "Senken- und Fließweganalyse: Wasser füllt Geländesenken am Ende eines Blockregens (Volumenbilanz); "
                  "auf Fließwegen gilt die Fließtiefe des Spitzenabflusses (rationale Methode, Manning-Strickler, "
                  "Fließbreite = Rasterweite). Keine 2D-Strömungssimulation, keine Versickerung während des Ereignisses."},
+        {"id": "A12", "art": "Vereinfachung", "quelle": "CLIMADA-Konvention",
+         "text": f"Erwarteter Jahresschaden als Untergrenze: Ereignisse zwischen den Wiederkehrintervallen "
+                 f"{', '.join(map(str, req.rps))} Jahre erhalten den Schaden des häufigeren Ereignisses; "
+                 f"Ereignisse seltener als {min(req.rps)}-jährlich zählen nicht."},
         {"id": "A11", "art": "Annahme", "quelle": "Hydraulik-Lehrbuchwerte",
          "text": "Rauheit nach Manning n: versiegelt 0,016 · teilversiegelt 0,025 · Grün 0,05 s/m^(1/3)."},
         {"id": "A2", "art": "Annahme", "quelle": "GECAA",
@@ -136,7 +159,7 @@ def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_s
 
 
 def _resample(a: np.ndarray, src_res: float, res: float) -> tuple[np.ndarray, float]:
-    k = max(1, int(round(res / src_res)))
+    k = max(1, math.ceil(res / src_res - 1e-9))
     if k == 1:
         return a, src_res
     h, w = (a.shape[0] // k) * k, (a.shape[1] // k) * k
@@ -154,6 +177,8 @@ def _edge_inflow_share(dem: np.ndarray) -> float:
 
 
 def run(provider, req: RainRequest, kostra=None) -> dict:
+    if req.cost_eur and not req.measures:
+        raise ValueError("Kosten angegeben, aber keine Maßnahme eingezeichnet")
     t0 = time.time()
     steps = []
 
@@ -171,7 +196,12 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
     dem, res = _resample(dem_raw, src_res, res_wanted)
     if np.isnan(dem).all():
         raise ValueError("Geländemodell ohne Werte")
-    dem = np.where(np.isnan(dem), np.nanmax(dem), dem)
+    if np.isnan(dem).any():           # data gaps: nearest valid height (no artificial hills or pits)
+        from scipy import ndimage as _nd
+        idx = _nd.distance_transform_edt(np.isnan(dem), return_distances=False, return_indices=True)
+        dem = dem[tuple(idx)]
+    if max(dem.shape) > MAX_CELLS_SIDE:
+        raise ValueError("Analysegebiet zu groß für die Rasterweite")
     tr = from_origin(x_left, y_top, res, res)
     shape_rc = dem.shape
     step("Gelände (DGM)")
@@ -298,19 +328,17 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
     step("Schadensberechnung")
 
     # 7 layers (PNG) and result
+    # map overlays: warp from UTM to Web Mercator so they line up exactly with the Leaflet map
     run_id = uuid.uuid4().hex[:12]
-    layers = {"hillshade": raster_png.hillshade_png(dem, res)}
+    warp, bounds = raster_png.mercator_warper(tr, shape_rc)
+    layers = {"hillshade": raster_png.hillshade_png(warp(raster_png.hillshade(dem, res)), shaded=True)}
     for (sc, rp), ev in events.items():
         key = f"{sc}|{rp}"
-        layers[f"depth|{key}|base"] = raster_png.depth_png(ev["base"].depth)
+        layers[f"depth|{key}|base"] = raster_png.depth_png(warp(ev["base"].depth))
         if "measure" in ev:
-            layers[f"depth|{key}|measure"] = raster_png.depth_png(ev["measure"].depth)
+            layers[f"depth|{key}|measure"] = raster_png.depth_png(warp(ev["measure"].depth))
     top = events[(req.scenarios[0], req.rps[-1])]["base"]
-    layers["flow"] = raster_png.flow_png(top.flow_acc_m3)
-    x1, y1 = x_left + shape_rc[1] * res, y_top - shape_rc[0] * res
-    corners = [to_wgs(box(x_left, y1, x1, y_top))["coordinates"][0][i] for i in range(4)]
-    lons, lats = [c[0] for c in corners], [c[1] for c in corners]
-    bounds = [[min(lats), min(lons)], [max(lats), max(lons)]]
+    layers["flow"] = raster_png.flow_png(warp(top.flow_acc_m3))
     _RUNS[run_id] = layers
     while len(_RUNS) > MAX_RUNS:
         _RUNS.popitem(last=False)

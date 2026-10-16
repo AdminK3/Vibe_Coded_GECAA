@@ -133,7 +133,7 @@ function renderRain() {
   const alarm = maxB - thr >= 0.3;
   let head = `Bei einem <strong>${rpMax}-jährlichen Starkregen</strong> (${r.rain.duration_min} min, ${fmt1(ev.rain_mm)} mm) stehen an
     <strong>${wet.length} von ${r.buildings.length} Gebäuden</strong> mehr als ${Math.round(thr * 100)} cm Wasser, höchstens <strong>${fmtM(maxB)}</strong>.
-    Erwarteter Schaden: <strong>${fmtEUR(imp.aai_agg)} pro Jahr</strong> (Größenordnung).`;
+    Erwarteter Schaden: <strong>mindestens ${fmtEUR(imp.aai_agg)} pro Jahr</strong> (Größenordnung, Untergrenze).`;
   if (fut) head += ` Mit +2 K: ${fmtEUR(fut.aai_agg)} pro Jahr.`;
   const kept = ev.measure ? ev.base.runoff_m3 - ev.measure.runoff_m3 : 0;
   if (m) head += ` Die Mulden halten dabei <strong>${fmt1(kept)} m³</strong> zurück (${ev.base.runoff_m3 ? fmt1((kept / ev.base.runoff_m3) * 100) : 0} % des Abflusses im Gebiet);
@@ -143,7 +143,7 @@ function renderRain() {
   const kpis = [
     kpi(fmtM(maxB), `max. Wassertiefe an Gebäuden (${rpMax} a)`),
     kpi(`${wet.length}`, `Gebäude über Schwellenhöhe (${rpMax} a)`, `von ${r.buildings.length} im Gebiet`),
-    kpi(fmtEUR(imp.aai_agg), "erwarteter Schaden pro Jahr", fut ? `+2 K: ${fmtEUR(fut.aai_agg)} (${imp.aai_agg ? `+${Math.round(((fut.aai_agg - imp.aai_agg) / imp.aai_agg) * 100)} %` : "–"})` : "", "bad"),
+    kpi(fmtEUR(imp.aai_agg), "erwarteter Schaden pro Jahr (Untergrenze)", fut ? `+2 K: ${fmtEUR(fut.aai_agg)} (${imp.aai_agg ? `+${Math.round(((fut.aai_agg - imp.aai_agg) / imp.aai_agg) * 100)} %` : "–"})` : "", "bad"),
     m ? kpi(`${fmt1(kept)} m³`, `Rückhalt der Mulden (${rpMax} a)`, `Speicher ${fmt1(r.measures.reduce((a, x) => a + x.storage_m3, 0))} m³`) : "",
     m ? kpi(fmtEURk(m.benefit_npv), "Nutzen der Maßnahme (30 J., 2 %)", m.bcr != null ? `Nutzen/Kosten ${m.bcr.toLocaleString("de-DE", { maximumFractionDigits: 2 })}` : "Kosten angeben für Nutzen/Kosten", m.bcr != null && m.bcr >= 1 ? "good" : "")
       : kpi(`${fmt1(ev.base.area_over_10cm_m2)} m²`, `Fläche > 10 cm Wasser (${rpMax} a)`),
@@ -167,7 +167,7 @@ function renderRain() {
       <p class="note">Wassertiefe in m am Gebäude (2-m-Streifen). Klick zeigt das Gebäude in der Karte.</p>` : `<p class="note">Kein Gebäude im Gebiet ist betroffen.</p>`}
     ${cmp.length ? `<h3 class="sec-title">Vergleich mit der BKG-Hinweiskarte</h3><table class="data"><tr><th>Gebäude</th><th>GECAA 100 a</th><th>BKG 100 a</th><th>BKG extrem</th></tr>
       ${cmp.map((c) => `<tr><td>${esc(c.label)}</td><td>${fmtM(c.gecaa_rp100)}</td><td>${fmtM(c.bkg_agw)}</td><td>${fmtM(c.bkg_extrem)}</td></tr>`).join("")}</table>
-      <p class="note">BKG: 2D-Simulation, Wassertiefe am Gebäudemittelpunkt – Abweichungen sind bei einer Screening-Methode zu erwarten.</p>` : ""}
+      <p class="note">Beide Werte an derselben Stelle: der tiefsten GECAA-Zelle im 2-m-Streifen um das Gebäude. BKG: 2D-Simulation – Abweichungen sind bei einer Screening-Methode zu erwarten.</p>` : ""}
     <details><summary class="sec-title" style="cursor:pointer">Ereignisse im Detail</summary>
       <table class="data"><tr><th>Szenario</th><th>Jahre</th><th>Regen</th><th>max. Tiefe</th><th>&gt; 10 cm</th><th>gespeichert</th></tr>
       ${r.events.map((e) => `<tr><td>${esc(e.scenario)}</td><td>${e.rp}</td><td>${fmt1(e.rain_mm)} mm</td><td>${fmtM(e.base.max_depth_m)}</td>

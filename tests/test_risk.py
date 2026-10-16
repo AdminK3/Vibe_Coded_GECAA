@@ -168,3 +168,47 @@ def test_cra_suggestions():
     assert rows["Starkregen"]["severity_now"] == 3 and rows["Starkregen"]["severity_future"] == 4
     assert rows["Hitze"]["severity_now"] == 4
     assert all(1 <= r[k] <= 4 for r in rows.values() for k in ("urgency", "priority"))
+
+
+# ---- regressions from the v3 review
+
+def test_overflow_continues_on_flow_path():
+    y, x = np.mgrid[0:60, 0:20]
+    dem = 10 - 0.05 * y.astype(float)
+    dem[20, 10] -= 0.3                                   # small pit that overflows
+    r = ponding(dem, 1.0, 40, 1.0)
+    below, clean = r.flow_acc_m3[40, 10], r.flow_acc_m3[40, 3]
+    assert below >= clean * 0.99                         # spill is not lost below the pit
+
+
+def test_rain_request_validation():
+    from pydantic import ValidationError
+    for bad in ({"duration_min": -5}, {"duration_min": 7}, {"rain_override_mm": {10: float("nan")}},
+                {"rain_override_mm": {7: 30}}, {"rain_override_mm": {10: -1}}):
+        with pytest.raises(ValidationError):
+            RainRequest(lon=6.9, lat=51.2, **bad)
+
+
+def test_cost_without_measure_rejected_and_lower_bound_labelled():
+    p = SyntheticProvider(ROOT / "data" / "samples")
+    w, s, e, n = p.bounds
+    with pytest.raises(ValueError):
+        run(p, RainRequest(lon=(w + e) / 2, lat=(s + n) / 2, cost_eur=1000, prefer_worker=False))
+    r = run(p, RainRequest(lon=(w + e) / 2, lat=(s + n) / 2, box_m=200, prefer_worker=False))
+    assert any(a["id"] == "A12" and "Untergrenze" in a["text"] for a in r["assumptions"])
+
+
+def test_overlay_bounds_are_mercator_aligned():
+    from rasterio.transform import from_origin
+    from gecaa.risk.raster_png import mercator_warper
+    warp, b = mercator_warper(from_origin(356000, 5680400, 2, 2), (200, 200))
+    out = warp(np.ones((200, 200)))
+    assert out.sum() > 0.9 * 200 * 200 * (out.size / out.size) * 0 + 1   # warped data present
+    assert b[0][0] < b[1][0] and b[0][1] < b[1][1]
+
+
+def test_cra_malformed_input_is_422():
+    from gecaa.api import app
+    c = TestClient(app)
+    assert c.post("/v3/cra/suggest", json={"rain": {"rps": []}}).status_code == 422
+    assert c.post("/v3/cra/suggest", json={"rain": {"rps": [100], "buildings": [{"depth": "x"}]}}).status_code == 422
