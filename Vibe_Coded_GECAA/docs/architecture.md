@@ -1,0 +1,64 @@
+# Architecture and roadmap
+
+This document maps the code to the seven components described in the GECAA
+application (Google.org Impact Challenge, April 2026) and lists the
+open-source building blocks planned for each.
+
+## Design principles
+
+1. **Every claim is traceable.** Each node in a blueprint names the
+   provisions that justify it; each provision carries its source and, once
+   fetched, a hashed snapshot of the exact text used.
+2. **Uncertainty is shown, not hidden.** Site data enters as probabilities.
+   The result states how certain it is and which check would change it most.
+3. **Deterministic where the law is, probabilistic where experts are.** Rule
+   tables give a single state where a statute or standard fixes a threshold,
+   and a distribution only where the relationship is genuinely uncertain.
+4. **Open and self-hostable.** Only permissively licensed libraries are
+   bundled, so the project can be released under Apache-2.0 and run on
+   European infrastructure without any proprietary service.
+5. **Decision support only.** Reports say so on every page.
+
+## Data flow
+
+```mermaid
+flowchart LR
+  P[Parcel GeoJSON + context] --> S[Spatial pipeline]
+  D[Site data layers] --> S
+  S -->|soft evidence| E[Bayesian Evaluation Engine]
+  B[Blueprint YAML] --> E
+  K[Provision catalogue] --> E
+  N[NeuRIS API] --> A[Knowledge Agent] -->|versioned snapshots| K
+  E --> R[Evaluation + reasoning chain]
+  R --> API[REST API] & CLI[CLI] & H[HTML report]
+```
+
+## Components
+
+| # | Component (application) | Status in this repo | Next open-source building blocks |
+|---|---|---|---|
+| 1 | Knowledge Agent | NeuRIS client, paragraph extraction, append-only snapshots with SHA-256 and change events | changedetection.io and Scrapy for state portals without an API; EUR-Lex via SPARQL; LangExtract for structured extraction with source spans; Prefect for scheduled polling |
+| 2 | Bayesian Evaluation Engine | Blueprint YAML compiled to pgmpy networks; soft evidence; sensitivity analysis naming the decisive check | PreliZ for expert elicitation of uncertain tables; PyMC for updating from recorded outcomes; MLflow for versioning blueprints |
+| 3 | Spatial pipeline | kf, groundwater, slope and water protection zones from local rasters and GeoJSON | STAC tools (odc-stac) or openEO on Copernicus Data Space instead of Earth Engine; WhiteboxTools for terrain and sinks; xPlanBox for development plans as constraint overlays |
+| 4 | Government interface | HTML report with numbered citations | KERN UX components; Typst for print-ready PDFs; a plain-language question interface on an EU-hosted model (Mistral or EuroLLM via vLLM) |
+| 5 | Bring Your Own Context | Not started | Docling and OCRmyPDF for uploaded plans and concepts; pgvector for retrieval; per-municipality isolation |
+| 6 | REST API | FastAPI with OpenAPI docs | Authentication with Keycloak; OGC API Processes via pygeoapi for the spatial checks |
+| 7 | Regulatory Knowledge Schema | LinkML schema, draft 0.1 | Alignment with LDML.de / Akoma Ntoso identifiers and W3C PROV; publish JSON Schema and RDF |
+
+## Roadmap for the next slices
+
+1. **Expert review of the swale-trench blueprint** with the regulatory domain
+   expert, then benchmark against real past cases from partner municipalities.
+2. **Real data for one pilot area** (for example Kreis Mettmann): soil map,
+   groundwater, DGM1 and water protection zones.
+3. **Distance to buildings and the development plan** as further nodes.
+4. **A second measure** (green roof or tree pit) to prove blueprints generalise.
+5. **Costs and funding matching** with 20-year maintenance projections.
+6. **German-language reports** and a KERN-based web interface.
+
+## Licence rule for contributions
+
+Code that is imported into GECAA must be permissively licensed (MIT, BSD,
+Apache-2.0, PostgreSQL, MPL for unmodified files). GPL or AGPL software
+(for example PostGIS, GeoServer, Neo4j, GRASS) may be used only as a separate
+service that GECAA talks to over a network interface, never imported.

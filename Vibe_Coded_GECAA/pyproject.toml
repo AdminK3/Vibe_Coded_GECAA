@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gecaa"
+version = "0.1.0"
+description = "GECAA - Governmental Engine for Climate Adaptation Action: cited, auditable evaluation of climate adaptation measures for a specific site."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+authors = [{ name = "Khoch3 KlimaKarten UG (haftungsbeschränkt)" }]
+keywords = ["climate adaptation", "bayesian network", "regulatory knowledge", "municipalities", "open government"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+dependencies = [
+  "pgmpy>=1.0",            # MIT - Bayesian network inference
+  "numpy>=1.26",           # BSD-3-Clause
+  "pandas>=2.1",           # BSD-3-Clause
+  "rasterio>=1.4",         # BSD-3-Clause - raster access (bundles GDAL, MIT)
+  "shapely>=2.0",          # BSD-3-Clause - geometry overlays
+  "pydantic>=2.6",         # MIT - data models
+  "pyyaml>=6.0",           # MIT - blueprint and knowledge files
+  "httpx>=0.27",           # BSD-3-Clause - NeuRIS client
+  "jinja2>=3.1",           # BSD-3-Clause - reports
+  "fastapi>=0.110",        # MIT - REST API
+  "uvicorn>=0.29",         # BSD-3-Clause - API server
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+gecaa = "gecaa.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gecaa = ["report/templates/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::FutureWarning", "ignore::DeprecationWarning"]

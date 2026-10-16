@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+# Site data layers used by the spatial pipeline.
+# This file points at the SYNTHETIC demo layers made by scripts/make_sample_data.py.
+# For a real deployment, copy it and point each layer at real data, for example
+# the GD NRW soil map (BK50) for permeability, groundwater level maps from the
+# water authority, a DGM1 terrain model from Geobasis NRW and the water
+# protection zones from the state's open data portal.
+
+name: synthetic-demo
+synthetic: true
+crs: EPSG:25832
+layers:
+  kf_log10:
+    path: kf_log10.tif
+    description: "Soil permeability as log10(kf) in m/s"
+    source: "Synthetic demo data"
+    licence: "CC0"
+  groundwater_depth:
+    path: groundwater_depth.tif
+    description: "Depth to mean highest groundwater level in m"
+    source: "Synthetic demo data"
+    licence: "CC0"
+  dem:
+    path: dem.tif
+    description: "Terrain model in m"
+    source: "Synthetic demo data"
+    licence: "CC0"
+  water_protection_zones:
+    path: water_protection_zones.geojson
+    zone_property: zone
+    description: "Water protection zones with zone I, II or III"
+    source: "Synthetic demo data"
+    licence: "CC0"

@@ -1,0 +1,162 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Provisions used by the blueprints. Each entry is one citable unit with
+# provenance. Summaries are written by the project in plain language.
+# `text` holds official text only where it may be redistributed (official
+# works under section 5 UrhG) and only after it was fetched from the source.
+# Technical standards (DWA, DIN, FLL) are licensed: only citations and
+# derived threshold values appear here, never their text.
+#
+# review_status "draft" means a regulatory domain expert has NOT yet checked
+# the entry. Every draft must be reviewed before results are used in practice.
+
+- id: whg_8
+  kind: federal_law
+  jurisdiction: DE
+  citation: "§ 8 Abs. 1 WHG"
+  title: "Wasserhaushaltsgesetz - Erlaubnis, Bewilligung"
+  eli: "eli/bund/bgbl-1/2009/s2585"
+  source_uri: "https://www.gesetze-im-internet.de/whg_2009/__8.html"
+  summary: >-
+    Using a body of water, which includes groundwater, needs a permit
+    (Erlaubnis) from the water authority unless the law says otherwise.
+  review_status: draft
+
+- id: whg_9_1_4
+  kind: federal_law
+  jurisdiction: DE
+  citation: "§ 9 Abs. 1 Nr. 4 WHG"
+  title: "Wasserhaushaltsgesetz - Benutzungen"
+  eli: "eli/bund/bgbl-1/2009/s2585"
+  source_uri: "https://www.gesetze-im-internet.de/whg_2009/__9.html"
+  summary: >-
+    Bringing or discharging substances into waters counts as a use of water.
+    Letting rainwater seep into the groundwater therefore usually counts as a
+    use that needs a permit.
+  review_status: draft
+
+- id: whg_46_2
+  kind: federal_law
+  jurisdiction: DE
+  citation: "§ 46 Abs. 2 WHG"
+  title: "Wasserhaushaltsgesetz - Erlaubnisfreie Benutzungen des Grundwassers"
+  eli: "eli/bund/bgbl-1/2009/s2585"
+  source_uri: "https://www.gesetze-im-internet.de/whg_2009/__46.html"
+  summary: >-
+    Harmless infiltration of rainwater into groundwater can be exempt from the
+    permit requirement where an ordinance provides for it. Whether an
+    exemption applies depends on federal and state ordinances.
+  review_status: draft
+
+- id: whg_55_2
+  kind: federal_law
+  jurisdiction: DE
+  citation: "§ 55 Abs. 2 WHG"
+  title: "Wasserhaushaltsgesetz - Grundsätze der Abwasserbeseitigung"
+  eli: "eli/bund/bgbl-1/2009/s2585"
+  source_uri: "https://www.gesetze-im-internet.de/whg_2009/__55.html"
+  summary: >-
+    Rainwater should be infiltrated or trickled away close to where it falls,
+    or discharged to a water body without mixing with wastewater, as long as
+    water law, other public law and water management concerns do not stand
+    against it. This is the federal principle behind decentralised rainwater
+    management such as swale-trench systems.
+  review_status: draft
+
+- id: whg_52
+  kind: federal_law
+  jurisdiction: DE
+  citation: "§§ 51, 52 WHG"
+  title: "Wasserhaushaltsgesetz - Wasserschutzgebiete"
+  eli: "eli/bund/bgbl-1/2009/s2585"
+  source_uri: "https://www.gesetze-im-internet.de/whg_2009/__52.html"
+  summary: >-
+    Water protection zones are set by ordinance. Within them, actions that
+    could endanger drinking water can be prohibited or restricted. The rules
+    differ by zone; the inner zones (I and II) are the strictest.
+  review_status: draft
+
+- id: lwg_nrw_44
+  kind: state_law
+  jurisdiction: DE-NW
+  citation: "§ 44 LWG NRW"
+  title: "Landeswassergesetz NRW - Beseitigung von Niederschlagswasser"
+  source_uri: "https://recht.nrw.de/"  # exact deep link to be added on review
+  summary: >-
+    North Rhine-Westphalia's rule on rainwater: for land built on or connected
+    to the sewer system for the first time after 1 January 1996, rainwater
+    is to be infiltrated, trickled or discharged locally where this is
+    possible without harm. To be confirmed against the current version.
+  review_status: draft
+
+- id: nrw_wsg_ordinance
+  kind: ordinance
+  jurisdiction: DE-NW
+  citation: "Wasserschutzgebietsverordnung (site-specific)"
+  title: "Ordinance of the water protection zone concerned"
+  summary: >-
+    Each water protection zone has its own ordinance listing what is
+    forbidden or needs approval in zones I, II and III. The ordinance for the
+    zone that covers the site decides whether infiltration is allowed.
+  review_status: draft
+
+- id: dwa_a_138_1_kf
+  kind: technical_standard
+  jurisdiction: DE
+  citation: "DWA-A 138-1 (2024), Durchlässigkeit des Untergrunds"
+  title: "DWA-A 138-1 Anlagen zur Versickerung von Niederschlagswasser - Teil 1"
+  source_uri: "https://webshop.dwa.de/"
+  summary: >-
+    Infiltration systems need soil that lets water through neither too slowly
+    nor too fast. The working range used here is a hydraulic conductivity kf
+    between 1e-6 and 1e-3 m/s.
+  licence_note: "Licensed standard. Only the citation and derived threshold are stored here."
+  review_status: draft
+
+- id: dwa_a_138_1_gw
+  kind: technical_standard
+  jurisdiction: DE
+  citation: "DWA-A 138-1 (2024), Sickerraum"
+  title: "DWA-A 138-1 Anlagen zur Versickerung von Niederschlagswasser - Teil 1"
+  source_uri: "https://webshop.dwa.de/"
+  summary: >-
+    Rainwater needs enough unsaturated soil below the facility to be cleaned
+    before it reaches groundwater. The working value used here is at least
+    1 m between the base of the facility and the mean highest groundwater level.
+  licence_note: "Licensed standard. Only the citation and derived threshold are stored here."
+  review_status: draft
+
+- id: dwa_a_138_1_contamination
+  kind: technical_standard
+  jurisdiction: DE
+  citation: "DWA-A 138-1 (2024), Altlasten und Bodenbelastungen"
+  title: "DWA-A 138-1 Anlagen zur Versickerung von Niederschlagswasser - Teil 1"
+  source_uri: "https://webshop.dwa.de/"
+  summary: >-
+    Water must not be infiltrated through contaminated ground, because it can
+    carry pollutants into the groundwater. A suspected contamination has to be
+    investigated first.
+  licence_note: "Licensed standard. Only the citation is stored here."
+  review_status: draft
+
+- id: k3_slope_assumption
+  kind: guidance
+  jurisdiction: DE
+  citation: "GECAA working assumption: slope"
+  title: "Slope limits for swales"
+  summary: >-
+    Swales work best on flat ground. Up to 5 % slope is treated as suitable,
+    5 to 10 % as possible with terracing, above 10 % as unsuitable. This is a
+    project assumption that the expert panel must confirm or replace.
+  review_status: draft
+
+- id: k3_area_assumption
+  kind: guidance
+  jurisdiction: DE
+  citation: "GECAA working assumption: space demand"
+  title: "Space needed for a swale-trench system"
+  summary: >-
+    As a first screening value, the swale needs free area of about 10 % of
+    the connected sealed area. Final sizing follows the DWA-A 138-1
+    calculation with local rainfall data.
+  review_status: draft

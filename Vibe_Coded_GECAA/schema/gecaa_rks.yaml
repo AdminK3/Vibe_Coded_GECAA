@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: Apache-2.0
+# GECAA Regulatory Knowledge Schema (RKS), draft 0.1
+#
+# The open data model for machine-readable climate adaptation rules:
+# legal provisions, technical standards and the evaluation blueprints built
+# on them. Written in LinkML (https://linkml.io) so it can be turned into
+# JSON Schema, Python classes, SQL or RDF and reused by other projects.
+# src/gecaa/models.py mirrors this schema in Pydantic.
+
+id: https://w3id.org/gecaa/rks
+name: gecaa_rks
+title: GECAA Regulatory Knowledge Schema
+version: 0.1.0
+license: Apache-2.0
+prefixes:
+  linkml: https://w3id.org/linkml/
+  gecaa: https://w3id.org/gecaa/rks/
+  eli: http://data.europa.eu/eli/ontology#
+  prov: http://www.w3.org/ns/prov#
+  schema: http://schema.org/
+default_prefix: gecaa
+default_range: string
+imports:
+  - linkml:types
+
+classes:
+
+  Any:
+    class_uri: linkml:Any
+    description: Free-form value (mappings of states to probabilities, raw inputs).
+
+  Provision:
+    description: >-
+      One citable unit of a legal or technical source, for example a paragraph
+      of a federal law, a section of a state law or a threshold from a
+      technical standard.
+    slots: [id, kind, jurisdiction, citation, title, eli, source_uri, summary,
+            text, licence_note, provenance, review_status, valid_from]
+    slot_usage:
+      id: {identifier: true}
+
+  Provenance:
+    description: Where a piece of knowledge came from and when (W3C PROV inspired).
+    class_uri: prov:Entity
+    slots: [retrieved_from, retrieved_at, content_sha256, retrieval_method, text_span]
+
+  Blueprint:
+    description: >-
+      The evaluation logic for one adaptation measure, written as a directed
+      acyclic graph of nodes. Leaf nodes take site evidence; inner nodes are
+      defined by rule tables that reference provisions.
+    slots: [id, title, measure, jurisdiction, version, review_status, nodes, gaps]
+    slot_usage:
+      id: {identifier: true}
+
+  Node:
+    description: A variable in the blueprint network.
+    slots: [id, label, states, parents, evidence_source, rules, basis, assumption]
+
+  Rule:
+    description: >-
+      One row of a node's rule table. When all conditions match the parent
+      states, the node takes the given distribution. Deterministic rules give
+      one state probability 1; expert-elicited rules give a distribution.
+    slots: [when, then, explanation, basis]
+
+  Evaluation:
+    description: The result of running a blueprint for one site.
+    slots: [blueprint_id, verdict, confidence, distribution, findings, inputs, gaps, created_at]
+
+  Finding:
+    description: One step of the reasoning chain shown to the user.
+    slots: [node_id, label, distribution, most_likely, explanation, basis, evidence]
+
+enums:
+  ProvisionKind:
+    permissible_values:
+      federal_law: {}
+      state_law: {}
+      ordinance: {}
+      technical_standard: {}
+      guidance: {}
+  ReviewStatus:
+    permissible_values:
+      draft: {description: Written by the project, not yet reviewed by a domain expert.}
+      expert_reviewed: {}
+      validated: {description: Checked against benchmark cases.}
+
+slots:
+  id: {}
+  kind: {range: ProvisionKind}
+  jurisdiction: {description: "ISO 3166 code, e.g. DE, DE-NW, AT-9"}
+  citation: {description: "Human citation, e.g. '§ 55 Abs. 2 WHG'"}
+  title: {}
+  eli: {description: European Legislation Identifier, slot_uri: eli:id_local}
+  source_uri: {range: uri}
+  summary: {description: Plain-language summary written by the project.}
+  text: {description: Official text where it may be redistributed.}
+  licence_note: {}
+  provenance: {range: Provenance}
+  review_status: {range: ReviewStatus}
+  valid_from: {range: date}
+  retrieved_from: {range: uri, slot_uri: prov:wasDerivedFrom}
+  retrieved_at: {range: datetime, slot_uri: prov:generatedAtTime}
+  content_sha256: {}
+  retrieval_method: {}
+  text_span: {}
+  measure: {}
+  version: {}
+  nodes: {range: Node, multivalued: true, inlined_as_list: true}
+  gaps: {multivalued: true, description: Checks this version does not perform.}
+  label: {}
+  states: {multivalued: true}
+  parents: {multivalued: true}
+  evidence_source: {}
+  rules: {range: Rule, multivalued: true, inlined_as_list: true}
+  basis: {multivalued: true, description: Provision ids that justify this node or rule.}
+  assumption: {description: Assumption made by the project that an expert must confirm.}
+  when: {range: Any}
+  then: {range: Any}
+  explanation: {}
+  blueprint_id: {}
+  verdict: {}
+  confidence: {range: float}
+  distribution: {range: Any}
+  findings: {range: Finding, multivalued: true, inlined_as_list: true}
+  inputs: {range: Any}
+  created_at: {range: datetime}
+  node_id: {}
+  most_likely: {}
+  evidence: {range: Any}

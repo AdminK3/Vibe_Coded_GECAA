@@ -1,0 +1,19 @@
+GECAA - Governmental Engine for Climate Adaptation Action
+Copyright 2026 Khoch3 KlimaKarten UG (haftungsbeschränkt)
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It uses the following open-source libraries as dependencies (not bundled in
+this repository), each under its own licence:
+  pgmpy (MIT), NumPy (BSD-3-Clause), pandas (BSD-3-Clause),
+  rasterio (BSD-3-Clause) with GDAL (MIT), Shapely (BSD-3-Clause),
+  Pydantic (MIT), PyYAML (MIT), HTTPX (BSD-3-Clause), Jinja2 (BSD-3-Clause),
+  FastAPI (MIT), Uvicorn (BSD-3-Clause).
+
+Legal texts retrieved from the federal legal information system
+(rechtsinformationen.bund.de / gesetze-im-internet.de) are official works
+and not subject to copyright under section 5 UrhG.
+
+Technical standards such as DWA-A 138-1 are licensed works. This repository
+contains only references to them and threshold values derived from them,
+never their copyrighted text.

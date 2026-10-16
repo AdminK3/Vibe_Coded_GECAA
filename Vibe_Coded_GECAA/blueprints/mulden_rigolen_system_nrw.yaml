@@ -1,0 +1,185 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Blueprint: swale-trench system (Mulden-Rigolen-System) on one parcel in NRW.
+#
+# A blueprint is a directed acyclic graph. Root nodes take site evidence.
+# Inner nodes are rule tables: the first rule whose `when` matches the parent
+# states decides the node. A rule's `then` is either one state (deterministic,
+# used where a law or standard fixes a threshold) or a distribution (expert
+# judgement where the relationship is genuinely uncertain).
+#
+# Status: DRAFT. Thresholds and rules are working values by the project team
+# and must be reviewed by the regulatory domain expert and the expert panel.
+
+id: mulden_rigolen_system_nrw
+title: "Swale-trench system (Mulden-Rigolen-System), NRW"
+measure: "Mulden-Rigolen-System"
+jurisdiction: DE-NW
+version: "0.1.0"
+review_status: draft
+outcome: feasibility
+
+parameters:
+  kf_min_m_s: 1.0e-6           # dwa_a_138_1_kf
+  kf_max_m_s: 1.0e-3           # dwa_a_138_1_kf
+  facility_depth_m: 1.3        # swale ~0.3 m + trench ~1.0 m below ground, project assumption
+  min_unsaturated_zone_m: 1.0  # dwa_a_138_1_gw
+  slope_flat_max_pct: 5        # k3_slope_assumption
+  slope_moderate_max_pct: 10   # k3_slope_assumption
+  area_ratio_min: 0.10         # k3_area_assumption
+  kf_log10_sigma: 0.5          # uncertainty of a kf estimate from soil maps, in log10 units
+  groundwater_sigma_m: 0.5     # uncertainty of a groundwater depth estimate, in metres
+  unknown_contamination_p: 0.1 # prior for "suspected" when the municipality gives no information
+
+nodes:
+
+  - id: kf
+    label: "Soil permeability (kf)"
+    states: [too_low, suitable, too_high]
+    state_labels: {too_low: "too low (< 1e-6 m/s)", suitable: "suitable (1e-6 to 1e-3 m/s)", too_high: "too high (> 1e-3 m/s)"}
+    evidence_source: spatial.kf
+    basis: [dwa_a_138_1_kf]
+
+  - id: groundwater
+    label: "Distance to groundwater"
+    states: [sufficient, insufficient]
+    state_labels: {sufficient: "sufficient unsaturated zone", insufficient: "groundwater too close"}
+    evidence_source: spatial.groundwater
+    basis: [dwa_a_138_1_gw]
+    assumption: "Facility base assumed 1.3 m below ground, so groundwater must be at least 2.3 m deep."
+
+  - id: slope
+    label: "Terrain slope"
+    states: [flat, moderate, steep]
+    state_labels: {flat: "flat (up to 5 %)", moderate: "moderate (5 to 10 %)", steep: "steep (over 10 %)"}
+    evidence_source: spatial.slope
+    basis: [k3_slope_assumption]
+
+  - id: protection_zone
+    label: "Water protection zone"
+    states: [none, zone_iii, zone_i_ii]
+    state_labels: {none: "outside any water protection zone", zone_iii: "in zone III", zone_i_ii: "in zone I or II"}
+    evidence_source: spatial.protection_zone
+    basis: [whg_52, nrw_wsg_ordinance]
+
+  - id: contamination
+    label: "Soil contamination"
+    states: [none_known, suspected]
+    state_labels: {none_known: "no contamination known", suspected: "contamination suspected"}
+    evidence_source: context.contamination
+    basis: [dwa_a_138_1_contamination]
+
+  - id: space
+    label: "Space for the swale"
+    states: [sufficient, insufficient]
+    state_labels: {sufficient: "enough free area", insufficient: "not enough free area"}
+    evidence_source: context.space
+    basis: [k3_area_assumption]
+
+  - id: infiltration
+    label: "Infiltration capacity"
+    states: [adequate, limited, inadequate]
+    state_labels: {adequate: "adequate", limited: "limited", inadequate: "inadequate"}
+    parents: [kf, groundwater]
+    rules:
+      - when: {groundwater: insufficient}
+        then: inadequate
+        explanation: "Groundwater is too close: rainwater would not pass enough unsaturated soil to be cleaned."
+        basis: [dwa_a_138_1_gw]
+      - when: {kf: too_low}
+        then: inadequate
+        explanation: "The soil drains too slowly for the system to empty between rain events."
+        basis: [dwa_a_138_1_kf]
+      - when: {kf: too_high}
+        then: {limited: 0.7, inadequate: 0.3}
+        explanation: "Very permeable soil drains fast but cleans poorly. It can sometimes work with an added filter layer. Expert placeholder, to be elicited."
+        basis: [dwa_a_138_1_kf]
+      - when: {kf: suitable, groundwater: sufficient}
+        then: adequate
+        explanation: "Permeability is in the working range and there is enough unsaturated soil above the groundwater."
+        basis: [dwa_a_138_1_kf, dwa_a_138_1_gw]
+
+  - id: site
+    label: "Site conditions"
+    states: [suitable, conditional, unsuitable]
+    state_labels: {suitable: "suitable", conditional: "suitable with conditions", unsuitable: "unsuitable"}
+    parents: [infiltration, slope, space, contamination]
+    rules:
+      - when: {contamination: suspected}
+        then: unsuitable
+        explanation: "A suspected contamination rules out infiltration until an investigation clears it."
+        basis: [dwa_a_138_1_contamination]
+      - when: {infiltration: inadequate}
+        then: unsuitable
+        explanation: "The ground cannot take the water safely."
+        basis: [dwa_a_138_1_kf, dwa_a_138_1_gw]
+      - when: {space: insufficient}
+        then: unsuitable
+        explanation: "There is not enough free area for a swale of the needed size."
+        basis: [k3_area_assumption]
+      - when: {slope: steep}
+        then: unsuitable
+        explanation: "The terrain is too steep for swales to hold water evenly."
+        basis: [k3_slope_assumption]
+      - when: {infiltration: adequate, slope: flat}
+        then: suitable
+        explanation: "Soil, groundwater, slope, space and contamination status all fit."
+        basis: [dwa_a_138_1_kf, dwa_a_138_1_gw, k3_slope_assumption, k3_area_assumption]
+      - when: {infiltration: adequate, slope: moderate}
+        then: conditional
+        explanation: "Workable, but the swales need terracing on this slope."
+        basis: [k3_slope_assumption]
+      - when: {infiltration: limited}
+        then: conditional
+        explanation: "Possible only with technical additions such as a filter layer."
+        basis: [dwa_a_138_1_kf]
+
+  - id: legal
+    label: "Water-law status"
+    states: [permissible, with_conditions, not_permissible]
+    state_labels: {permissible: "permissible (permit or exemption)", with_conditions: "only under the zone ordinance's conditions", not_permissible: "not permissible"}
+    parents: [protection_zone]
+    rules:
+      - when: {protection_zone: zone_i_ii}
+        then: not_permissible
+        explanation: "Infiltration in the inner water protection zones is normally prohibited by the zone ordinance."
+        basis: [whg_52, nrw_wsg_ordinance]
+      - when: {protection_zone: zone_iii}
+        then: with_conditions
+        explanation: "In zone III the zone ordinance decides; infiltration is often allowed with conditions."
+        basis: [whg_52, nrw_wsg_ordinance]
+      - when: {protection_zone: none}
+        then: permissible
+        explanation: "Federal and NRW law favour local infiltration of rainwater. It needs a water-law permit unless an exemption applies."
+        basis: [whg_55_2, lwg_nrw_44, whg_8, whg_9_1_4, whg_46_2]
+
+  - id: feasibility
+    label: "Overall feasibility"
+    states: [feasible, conditional, not_feasible]
+    state_labels: {feasible: "feasible", conditional: "feasible with conditions", not_feasible: "not feasible"}
+    parents: [site, legal]
+    rules:
+      - when: {legal: not_permissible}
+        then: not_feasible
+        explanation: "Ruled out by water law at this location."
+        basis: [whg_52]
+      - when: {site: unsuitable}
+        then: not_feasible
+        explanation: "Ruled out by site conditions."
+        basis: []
+      - when: {site: suitable, legal: permissible}
+        then: feasible
+        explanation: "Site conditions and water law both allow the measure."
+        basis: [whg_55_2]
+      - when: {}
+        then: conditional
+        explanation: "Possible, subject to the conditions listed for the site or the zone ordinance."
+        basis: []
+
+gaps:
+  - "Distance to buildings with basements and to neighbouring plots"
+  - "Stipulations of the local development plan (Bebauungsplan) and drainage statutes (Satzungen)"
+  - "Hydraulic sizing with local design rainfall (KOSTRA-DWD)"
+  - "Whether an exemption from the permit requirement applies at this site"
+  - "Construction and 20-year maintenance costs"
+  - "Matching funding programmes"

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GECAA evaluation · {{ e.blueprint_title }}{% if parcel.name %} · {{ parcel.name }}{% endif %}</title>
+<style>
+  :root{--ink:#16232b;--muted:#5a6a73;--line:#d7dfe3;--bg:#f6f8f9;--paper:#fff;--accent:#0b5e8a;
+        --good:#2e7a3f;--good-bg:#e3f2e6;--warn:#8d5a00;--warn-bg:#fbefd5;--bad:#a8332c;--bad-bg:#f8e2e0;
+        --sans:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;--mono:ui-monospace,Consolas,monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+  main{max-width:860px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-left)) 64px;background:var(--paper)}
+  h1{font-size:26px;line-height:1.2;margin:4px 0 6px}
+  h2{font-size:18px;margin:32px 0 10px;padding-top:12px;border-top:1px solid var(--line)}
+  h3{font-size:15px;margin:0}
+  .eyebrow{font:500 12px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .meta{color:var(--muted);font-size:14px;margin:0}
+  .banner{border:1px solid var(--warn);background:var(--warn-bg);color:var(--warn);padding:10px 14px;border-radius:6px;margin:16px 0 0;font-size:14px}
+  .verdict{margin-top:20px;padding:20px;border-radius:8px;border:1px solid var(--line)}
+  .verdict.good{background:var(--good-bg);border-color:var(--good)} .verdict.warn{background:var(--warn-bg);border-color:var(--warn)} .verdict.bad{background:var(--bad-bg);border-color:var(--bad)}
+  .verdict .big{font-size:24px;font-weight:700;margin:0}
+  .verdict.good .big{color:var(--good)} .verdict.warn .big{color:var(--warn)} .verdict.bad .big{color:var(--bad)}
+  .bars{display:grid;gap:4px;margin-top:10px}
+  .bar{display:grid;grid-template-columns:minmax(120px,190px) 1fr 48px;gap:10px;align-items:center;font-size:13px}
+  .track{height:10px;background:#e6ecef;border-radius:5px;overflow:hidden}
+  .fill{height:100%;background:var(--accent)}
+  .bar .pct{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+  .bar.top{font-weight:600}
+  .step{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:10px 0;break-inside:avoid}
+  .step .head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 12px;align-items:baseline}
+  .step .state{font-weight:600}
+  .step p{margin:8px 0 0}
+  .refs{font-size:12px;vertical-align:super}
+  .refs a{color:var(--accent);text-decoration:none}
+  .assume{font-size:13px;color:var(--warn);margin-top:6px}
+  .detail{font:12px/1.5 var(--mono);color:var(--muted);margin-top:8px;overflow-wrap:anywhere}
+  .check{border-left:4px solid var(--accent);background:#eef5f9;padding:12px 16px;margin:10px 0;border-radius:0 6px 6px 0}
+  ul.gaps{margin:0;padding-left:20px} ul.gaps li{margin:4px 0}
+  ol.sources{padding-left:22px} ol.sources li{margin:0 0 14px}
+  .src-meta{font-size:12px;color:var(--muted);font-family:var(--mono);overflow-wrap:anywhere}
+  .pill{display:inline-block;font:500 11px/1 var(--mono);padding:3px 6px;border-radius:3px;background:var(--warn-bg);color:var(--warn);margin-left:6px;vertical-align:middle}
+  .pill.ok{background:var(--good-bg);color:var(--good)}
+  table{border-collapse:collapse;width:100%;font-size:14px} td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top} td:first-child{color:var(--muted);width:40%}
+  footer{margin-top:40px;font-size:12px;color:var(--muted)}
+  @media print{body{background:#fff} main{padding:0} .verdict,.step,.check{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">GECAA · measure evaluation · {{ e.created_at.strftime("%d.%m.%Y %H:%M UTC") }}</div>
+  <h1>{{ e.blueprint_title }}</h1>
+  <p class="meta">{% if parcel.name %}{{ parcel.name }} ({{ parcel.id }}){% if parcel.area_m2 %}, {{ "{:,}".format(parcel.area_m2).replace(",", ".") }} m²{% endif %} · {% endif %}Blueprint {{ e.blueprint_id }} v{{ e.blueprint_version }}</p>
+
+  {% if e.review_status.value == "draft" %}
+  <div class="banner"><strong>Draft logic.</strong> The rules and thresholds in this blueprint have not yet been reviewed by a regulatory domain expert. Use this report for screening only, not for decisions.</div>
+  {% endif %}
+  {% if synthetic %}
+  <div class="banner"><strong>Synthetic data.</strong> The site data behind this report is invented demo data, not real measurements.</div>
+  {% endif %}
+
+  <section class="verdict {{ tone }}">
+    <div class="eyebrow">Result</div>
+    <p class="big">{{ e.verdict_label|capitalize }} · {{ "%.0f"|format(e.confidence * 100) }} %</p>
+    <p style="margin:6px 0 0">{{ certainty_text }}</p>
+    <div class="bars">
+      {% for state, p in e.distribution.items() %}
+      <div class="bar {{ 'top' if state == e.verdict }}"><span>{{ outcome.state_labels.get(state, state)|capitalize }}</span><span class="track"><span class="fill" style="display:block;width:{{ '%.1f'|format(p * 100) }}%"></span></span><span class="pct">{{ "%.0f"|format(p * 100) }} %</span></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if e.next_checks %}
+  <h2>What would settle it</h2>
+  {% for c in e.next_checks %}
+  <div class="check">
+    <h3>{{ c.label }}</h3>
+    <p style="margin:6px 0">{{ c.advice }}</p>
+    <div class="bars">
+      {% for state, dist in c.outcome_if.items() %}
+      <div class="bar"><span>If {{ state }}</span><span class="track"><span class="fill" style="display:block;width:{{ '%.1f'|format(dist[best_state] * 100) }}%"></span></span><span class="pct">{{ "%.0f"|format(dist[best_state] * 100) }} %</span></div>
+      {% endfor %}
+    </div>
+    <p class="detail">Bars show the chance of "{{ outcome.state_labels.get(best_state, best_state) }}" for each case.</p>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <h2>How the result was reached</h2>
+  {% for f in derived|reverse %}
+  <div class="step">
+    <div class="head"><h3>{{ f.label }}</h3><span class="state">{{ f.most_likely_label|capitalize }} · {{ "%.0f"|format(f.distribution[f.most_likely] * 100) }} %</span></div>
+    <p>{{ f.explanation }}{% if f.basis %} <span class="refs">{% for b in f.basis if b in refs %}<a href="#src-{{ refs[b] }}">[{{ refs[b] }}]</a>{% endfor %}</span>{% endif %}</p>
+    {% if f.evidence.get("most likely inputs") %}<div class="detail">Based on: {% for k, v in f.evidence["most likely inputs"].items() %}{{ k }}: {{ v }}{{ "; " if not loop.last }}{% endfor %}</div>{% endif %}
+  </div>
+  {% endfor %}
+
+  <h2>Site evidence</h2>
+  {% for f in inputs %}
+  <div class="step">
+    <div class="head"><h3>{{ f.label }}</h3><span class="state">{{ f.most_likely_label|capitalize }} · {{ "%.0f"|format(f.distribution[f.most_likely] * 100) }} %</span></div>
+    <p>{{ f.explanation }}{% if f.basis %} <span class="refs">{% for b in f.basis if b in refs %}<a href="#src-{{ refs[b] }}">[{{ refs[b] }}]</a>{% endfor %}</span>{% endif %}</p>
+    {% if f.assumption %}<div class="assume">Assumption: {{ f.assumption }}</div>{% endif %}
+    {% set d = f.evidence %}
+    {% if d.get("source") %}<div class="detail">Data: {{ d.get("layer") }} · {{ d.get("source") }} · licence {{ d.get("licence") }}</div>{% endif %}
+  </div>
+  {% endfor %}
+
+  <h2>Not checked in this version</h2>
+  <ul class="gaps">{% for g in e.gaps %}<li>{{ g }}</li>{% endfor %}</ul>
+
+  <h2>Sources</h2>
+  <ol class="sources">
+    {% for s in sources %}
+    <li id="src-{{ loop.index }}">
+      <strong>{{ s.citation }}</strong> · {{ s.title }}
+      {% if s.review_status.value == "draft" %}<span class="pill">draft</span>{% else %}<span class="pill ok">{{ s.review_status.value|replace("_", " ") }}</span>{% endif %}
+      <div>{{ s.summary }}</div>
+      {% if s.text %}<blockquote style="margin:6px 0;padding-left:10px;border-left:3px solid var(--line);color:var(--muted)">{{ s.text }}</blockquote>{% endif %}
+      <div class="src-meta">
+        {% if s.source_uri %}<a href="{{ s.source_uri }}">{{ s.source_uri }}</a>{% endif %}{% if s.eli %} · ELI {{ s.eli }}{% endif %}
+        {% if s.provenance.content_sha256 %} · retrieved {{ s.provenance.retrieved_at.strftime("%d.%m.%Y") }} via {{ s.provenance.retrieval_method }}, sha256 {{ s.provenance.content_sha256[:12] }}{% else %} · text not yet fetched from source{% endif %}
+        {% if s.licence_note %} · {{ s.licence_note }}{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+
+  {% if e.inputs %}
+  <h2>Inputs</h2>
+  <table>{% for k, v in e.inputs.items() %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}</table>
+  {% endif %}
+
+  <footer>Generated by GECAA {{ e.blueprint_version }} (Apache-2.0). GECAA supports decisions and does not replace them: the responsible officer and the water authority decide. Every step above can be traced to its source.</footer>
+</main>
+</body>
+</html>

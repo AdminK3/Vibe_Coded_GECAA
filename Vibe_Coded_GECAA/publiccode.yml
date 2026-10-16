@@ -1,0 +1,54 @@
+# publiccode.yml - metadata for public-sector software catalogues (openCoDE, EU OSS catalogue)
+# https://yml.publiccode.tools
+publiccodeYmlVersion: "0.4"
+name: GECAA
+url: "https://github.com/AdminK3/Vibe_Coded_GECAA"
+softwareVersion: "0.1.0"
+releaseDate: "2026-10-16"
+platforms:
+  - web
+  - linux
+categories:
+  - decision-support
+  - data-analytics
+  - geographic-information-systems
+developmentStatus: development
+softwareType: "standalone/web"
+description:
+  en:
+    localisedName: GECAA - Governmental Engine for Climate Adaptation Action
+    shortDescription: >-
+      Cited, auditable evaluation of whether a climate adaptation measure can
+      be built at a specific site.
+    longDescription: >-
+      GECAA helps municipal climate officers answer two questions: can this
+      adaptation measure be implemented here, and what protects this site
+      best. It combines legal provisions, technical standards and open
+      geodata in a transparent Bayesian network. Every step of the reasoning
+      cites its source, uncertain inputs are named together with the check
+      that would settle them, and the decision stays with the responsible
+      officer. This first version covers swale-trench systems
+      (Mulden-Rigolen-Systeme) in North Rhine-Westphalia.
+    features:
+      - Site evaluation of a swale-trench system against water law and technical thresholds
+      - Bayesian reasoning chain with numbered citations
+      - Spatial checks of soil permeability, groundwater depth, slope and water protection zones
+      - Knowledge Agent that fetches federal law from NeuRIS and records every change
+      - REST API, command line and HTML reports
+legal:
+  license: Apache-2.0
+  mainCopyrightOwner: Khoch3 KlimaKarten UG (haftungsbeschränkt)
+  repoOwner: Khoch3 KlimaKarten UG (haftungsbeschränkt)
+maintenance:
+  type: internal
+  contacts:
+    - name: Nils Derboven
+      email: derboven@khoch3klimakarten.de
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
+dependsOn:
+  open:
+    - name: Python
+      versionMin: "3.11"

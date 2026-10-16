@@ -1,0 +1,80 @@
+{
+ "type": "FeatureCollection",
+ "name": "synthetic_water_protection_zones",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "EPSG:25832"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "zone": "III",
+    "name": "Demo-Wasserwerk, Zone III"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       356240.0,
+       5680400.0
+      ],
+      [
+       356400.0,
+       5680400.0
+      ],
+      [
+       356400.0,
+       5680200.0
+      ],
+      [
+       356240.0,
+       5680200.0
+      ],
+      [
+       356240.0,
+       5680400.0
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "zone": "II",
+    "name": "Demo-Wasserwerk, Zone II"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       356340.0,
+       5680380.0
+      ],
+      [
+       356400.0,
+       5680380.0
+      ],
+      [
+       356400.0,
+       5680310.0
+      ],
+      [
+       356340.0,
+       5680310.0
+      ],
+      [
+       356340.0,
+       5680380.0
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

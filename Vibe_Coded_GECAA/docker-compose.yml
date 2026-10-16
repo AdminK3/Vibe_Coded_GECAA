@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Start:  docker compose up --build
+# Then open http://localhost:8000/docs (API) or http://localhost:8000/v1/demo/demo-c (sample report)
+services:
+  gecaa:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      GECAA_HOME: /app
+      # Point at your own site data layers (see data/samples/dataset.yaml):
+      # GECAA_DATASET: /app/data/site/dataset.yaml
+    volumes:
+      # Keeps retrieved law snapshots across restarts.
+      - snapshots:/app/data/knowledge/snapshots
+      # Mount real site data here:
+      # - ./my-site-data:/app/data/site:ro
+    restart: unless-stopped
+
+volumes:
+  snapshots:

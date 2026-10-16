@@ -1,0 +1,123 @@
+{
+ "type": "FeatureCollection",
+ "name": "synthetic_parcels",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "EPSG:25832"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "demo-a",
+    "name": "Schulhof West (demo)",
+    "connected_area_m2": 2400,
+    "available_area_m2": 420,
+    "contamination": "none_known"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       356040.0,
+       5680340.0
+      ],
+      [
+       356110.0,
+       5680340.0
+      ],
+      [
+       356110.0,
+       5680270.0
+      ],
+      [
+       356040.0,
+       5680270.0
+      ],
+      [
+       356040.0,
+       5680340.0
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "demo-b",
+    "name": "Gewerbefl\u00e4che Ost (demo)",
+    "connected_area_m2": 5200,
+    "available_area_m2": 610,
+    "contamination": "unknown"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       356260.0,
+       5680290.0
+      ],
+      [
+       356330.0,
+       5680290.0
+      ],
+      [
+       356330.0,
+       5680220.0
+      ],
+      [
+       356260.0,
+       5680220.0
+      ],
+      [
+       356260.0,
+       5680290.0
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "demo-c",
+    "name": "Wohnquartier am Bach (demo)",
+    "connected_area_m2": 3100,
+    "available_area_m2": 350,
+    "contamination": "none_known"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       356060.0,
+       5680080.0
+      ],
+      [
+       356150.0,
+       5680080.0
+      ],
+      [
+       356150.0,
+       5680010.0
+      ],
+      [
+       356060.0,
+       5680010.0
+      ],
+      [
+       356060.0,
+       5680080.0
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}
