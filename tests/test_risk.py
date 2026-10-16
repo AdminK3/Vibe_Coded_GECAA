@@ -52,21 +52,21 @@ def test_bowl_level_pool():
 
 
 def test_kostra_parser_and_cell():
-    text = "INDEX_RC;HN_001A;HN_010A;HN_100A;RN_001A\n215039;20,1;35,6;52,3;55,8\n000000;-99,9;-99,9;-99,9;-99\n"
+    text = "INDEX_RC;HN_001A;HN_010A;HN_100A;RN_001A\n133101;20,1;35,6;52,3;55,8\n000000;-99,9;-99,9;-99,9;-99\n"
     t = kostra.parse_table(text)
-    assert t["215039"] == {1: 20.1, 10: 35.6, 100: 52.3} and "000000" not in t
-    assert kostra.cell_index(6.9745, 51.2509) == "215039"
+    assert t["133101"] == {1: 20.1, 10: 35.6, 100: 52.3} and "000000" not in t
+    assert kostra.cell_index(6.9745, 51.2509) == "133101"
     assert kostra.cell_index(-30, 10) is None
 
 
 def test_kostra_lookup_from_zip(tmp_path):
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as z:
-        z.writestr("StatRR_KOSTRA-DWD-2020_D00060.csv", "INDEX_RC;HN_010A;HN_030A;HN_100A\n215039;35,6;42,0;52,3\n")
+        z.writestr("StatRR_KOSTRA-DWD-2020_D00060.csv", "INDEX_RC;HN_010A;HN_030A;HN_100A\n133101;35,6;42,0;52,3\n")
     (tmp_path / "StatRR_KOSTRA-DWD-2020_D00060.csv.zip").write_bytes(buf.getvalue())
     k = kostra.Kostra(cache_dir=tmp_path)
     d = k.depths(6.9745, 51.2509, 60)
-    assert d["mm"] == {10: 35.6, 30: 42.0, 100: 52.3} and d["cell"] == "215039"
+    assert d["mm"] == {10: 35.6, 30: 42.0, 100: 52.3} and d["cell"] == "133101"
 
 
 def test_climaax_shift_matches_hand_values():

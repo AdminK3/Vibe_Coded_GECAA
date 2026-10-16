@@ -4,7 +4,7 @@
 Files (verified): .../KOSTRA_DWD_2020/tab/StatRR_KOSTRA-DWD-2020_D{minutes:05d}.csv.zip
   INDEX_RC;HN_001A;...;HN_100A;RN_...;UC_...   (';' separated, decimal comma, -99,9 = no data)
 Grid (from the ASC version of the same data): 300 x 300 cells of 5 km, lower left corner (3600000, 2300000)
-in ETRS89 / LCC Europe (EPSG:3034). INDEX_RC = row (from the top) * 1000 + column, written with 6 digits.
+in ETRS89 / LAEA Europe (EPSG:3035; verified against the ASC grid: 200 of 200 cells agree). INDEX_RC = row (from the top) * 1000 + column, written with 6 digits.
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ X0, Y0, CELL, NROWS, NCOLS = 3_600_000.0, 2_300_000.0, 5_000.0, 300, 300
 RPS = (1, 2, 3, 5, 10, 20, 30, 50, 100)
 DURATIONS = (5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 540, 720, 1080, 1440, 2880, 4320)
 SOURCE = "KOSTRA-DWD-2020, Deutscher Wetterdienst (CC BY 4.0)"
-_to_lcc = Transformer.from_crs("EPSG:4326", "EPSG:3034", always_xy=True)
+_to_laea = Transformer.from_crs("EPSG:4326", "EPSG:3035", always_xy=True)
 
 
 def cell_index(lon: float, lat: float) -> str | None:
-    x, y = _to_lcc.transform(lon, lat)
+    x, y = _to_laea.transform(lon, lat)
     col = int((x - X0) // CELL)
     row = int((Y0 + NROWS * CELL - y) // CELL)
     if not (0 <= row < NROWS and 0 <= col < NCOLS):
