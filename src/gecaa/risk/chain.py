@@ -44,6 +44,7 @@ DEFAULT_RUNOFF = 0.5
 
 _RUNS: "OrderedDict[str, dict]" = OrderedDict()
 MAX_RUNS = 12
+MAX_CELLS_SIDE = 600         # at most 600 x 600 cells: coarser resolution for large areas (runtime)
 
 
 class MeasureIn(BaseModel):
@@ -166,7 +167,8 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
 
     # 1 terrain
     dem_raw, x_left, y_top, src_res = provider.dem(bbox)
-    dem, res = _resample(dem_raw, src_res, req.res_m)
+    res_wanted = max(req.res_m, (2 * half) / MAX_CELLS_SIDE)
+    dem, res = _resample(dem_raw, src_res, res_wanted)
     if np.isnan(dem).all():
         raise ValueError("Geländemodell ohne Werte")
     dem = np.where(np.isnan(dem), np.nanmax(dem), dem)

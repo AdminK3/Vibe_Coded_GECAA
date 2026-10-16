@@ -135,13 +135,16 @@ function renderRain() {
     <strong>${wet.length} von ${r.buildings.length} Gebäuden</strong> mehr als ${Math.round(thr * 100)} cm Wasser, höchstens <strong>${fmtM(maxB)}</strong>.
     Erwarteter Schaden: <strong>${fmtEUR(imp.aai_agg)} pro Jahr</strong> (Größenordnung).`;
   if (fut) head += ` Mit +2 K: ${fmtEUR(fut.aai_agg)} pro Jahr.`;
-  if (m) head += ` Die Mulden senken den erwarteten Schaden um <strong>${imp.aai_agg > 0 ? Math.round((m.benefit_annual / imp.aai_agg) * 100) : 0} %</strong>.`;
+  const kept = ev.measure ? ev.base.runoff_m3 - ev.measure.runoff_m3 : 0;
+  if (m) head += ` Die Mulden halten dabei <strong>${fmt1(kept)} m³</strong> zurück (${ev.base.runoff_m3 ? fmt1((kept / ev.base.runoff_m3) * 100) : 0} % des Abflusses im Gebiet);
+    der erwartete Schaden sinkt um <strong>${imp.aai_agg > 0 ? Math.round((m.benefit_annual / imp.aai_agg) * 100) : 0} %</strong>.`;
   const shift = (r.rp_shift || []).find((s) => s.warming_k === 2) || (r.rp_shift || [])[0];
   const kpi = (v, l, d, cls) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div>${d ? `<div class="d ${cls || ""}">${d}</div>` : ""}</div>`;
   const kpis = [
     kpi(fmtM(maxB), `max. Wassertiefe an Gebäuden (${rpMax} a)`),
     kpi(`${wet.length}`, `Gebäude über Schwellenhöhe (${rpMax} a)`, `von ${r.buildings.length} im Gebiet`),
     kpi(fmtEUR(imp.aai_agg), "erwarteter Schaden pro Jahr", fut ? `+2 K: ${fmtEUR(fut.aai_agg)} (${imp.aai_agg ? `+${Math.round(((fut.aai_agg - imp.aai_agg) / imp.aai_agg) * 100)} %` : "–"})` : "", "bad"),
+    m ? kpi(`${fmt1(kept)} m³`, `Rückhalt der Mulden (${rpMax} a)`, `Speicher ${fmt1(r.measures.reduce((a, x) => a + x.storage_m3, 0))} m³`) : "",
     m ? kpi(fmtEURk(m.benefit_npv), "Nutzen der Maßnahme (30 J., 2 %)", m.bcr != null ? `Nutzen/Kosten ${m.bcr.toLocaleString("de-DE", { maximumFractionDigits: 2 })}` : "Kosten angeben für Nutzen/Kosten", m.bcr != null && m.bcr >= 1 ? "good" : "")
       : kpi(`${fmt1(ev.base.area_over_10cm_m2)} m²`, `Fläche > 10 cm Wasser (${rpMax} a)`),
   ].join("");
