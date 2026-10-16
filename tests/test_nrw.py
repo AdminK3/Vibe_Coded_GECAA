@@ -71,6 +71,8 @@ def test_groundwater_class_uses_shallow_edge():
     assert gwf.value == 0.8 and "abgeleitet" in gwf.note
     nogw = provider(lambda u, p: BK50_NOGW).groundwater_depth(LOC)
     assert nogw.value == 2.0 and nogw.distribution is None
+    deep = provider(lambda u, p: BK50.replace('GW_CODE="GW3" GW_STUFE="3"', 'GW_CODE="GWA5" GW_STUFE="5"')).groundwater_depth(LOC)
+    assert deep.value == 2.0 and "GWA5" in deep.note and "abgesenkt" in deep.note
 
 
 def test_sealed_area_gives_missing_not_a_guess():

@@ -108,7 +108,7 @@ function initMap() {
 
 const buildingStyle = (selected) => selected
   ? { color: "#0a5c8f", weight: 2, fillColor: "#0a5c8f", fillOpacity: 0.45 }
-  : { color: "#5b6b75", weight: 1, fillColor: "#9fb0ba", fillOpacity: 0.25 };
+  : { color: "#ffffff", weight: 1.2, fillColor: "#37474f", fillOpacity: 0.2 };
 const unitStyle = (u, result) => {
   const c = result ? COLOUR[result] : (u === st.active ? "#0a5c8f" : "#2f6f8f");
   return { color: c, weight: u === st.active ? 3 : 2, dashArray: result ? null : "5 4", fillColor: c, fillOpacity: result ? 0.4 : 0.15 };

@@ -302,10 +302,13 @@ class NRWProvider:
             return InputValue(abbr="GWF", value=lo, unit="m", distribution=("uniform", lo, hi), source=src, level="unit",
                               quality=Quality.mittel, note=note)
         no_gw = str(f.get("GW_TIEFE", "")).strip() in ("99", "99.0")
-        if cls == 0 or (cls is None and no_gw):
-            return InputValue(abbr="GWF", value=2.0, unit="m", source=src, level="unit", quality=Quality.mittel,
-                              note="BK50: kein Grundwasser im 2-m-Raum. Verwendet wird 2 m (Untergrenze, abgeleitet); "
-                                   "tatsächlicher Flurabstand größer, aber nicht beziffert.")
+        if cls == 0 or (cls is not None and cls >= 5) or (cls is None and no_gw):
+            what = "kein Grundwasser im 2-m-Raum" if cls in (0, None) else f"Grundwasserstufe {code or cls}, tiefer als Stufe 4 (bis 2,0 m)"
+            note = (f"BK50: {what}. Verwendet wird 2 m (Untergrenze, abgeleitet); "
+                    "tatsächlicher Flurabstand größer, aber nicht beziffert.")
+            if flag:
+                note += f" Grundwasser {flag}."
+            return InputValue(abbr="GWF", value=2.0, unit="m", source=src, level="unit", quality=Quality.mittel, note=note)
         return InputValue(abbr="GWF", value=None, unit="m", source=src, level="unit",
                           note=f"Grundwasserstufe nicht auswertbar ({code or 'leer'}).")
 
