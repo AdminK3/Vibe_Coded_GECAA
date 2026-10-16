@@ -41,7 +41,7 @@ gecaa = "gecaa.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-gecaa = ["report/templates/*.j2"]
+gecaa = ["report/templates/*.j2", "web/*", "web/vendor/*/*", "web/vendor/leaflet/images/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

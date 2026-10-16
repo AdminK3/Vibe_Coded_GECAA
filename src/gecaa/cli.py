@@ -61,14 +61,10 @@ def _cmd_validate(args) -> int:
     return 0 if ok else 1
 
 
-# Search terms that find each federal law in NeuRIS.
-SEARCH_TERMS = {"eli/bund/bgbl-1/2009/s2585": "Wasserhaushaltsgesetz"}
-
-
 def _cmd_refresh(args) -> int:
     from . import data_dir
     from .knowledge import SnapshotStore, load_provisions
-    from .knowledge.neuris import NeurisClient
+    from .knowledge.neuris import NeurisClient, search_term_for
 
     home = data_dir()
     provisions = load_provisions(home / "data" / "knowledge" / "provisions.yaml")
@@ -79,7 +75,7 @@ def _cmd_refresh(args) -> int:
         if not prov.eli:
             continue
         try:
-            event = client.refresh(prov, store, SEARCH_TERMS.get(prov.eli, prov.title.split(" - ")[0]))
+            event = client.refresh(prov, store, search_term_for(prov))
         except Exception as exc:
             failures += 1
             print(f"{prov.id}: failed - {exc}")

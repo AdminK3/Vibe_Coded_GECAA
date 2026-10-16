@@ -1,0 +1,15 @@
+{
+  "name": "GECAA",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "postCreateCommand": "pip install -e '.[dev]'",
+  "postAttachCommand": {
+    "app": "uvicorn gecaa.api:app --host 0.0.0.0 --port 8000"
+  },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "GECAA app", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "vscode": { "extensions": ["ms-python.python"] }
+  }
+}

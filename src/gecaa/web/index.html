@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GECAA · Measure evaluation</title>
+<!-- Open-source libraries, bundled in /static/vendor (no CDN, no third-party requests):
+     Leaflet 1.9.4 (BSD-2-Clause), Leaflet-Geoman free 2.17.0 (MIT), Cytoscape.js 3.30.2 (MIT) -->
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/static/vendor/geoman/leaflet-geoman.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">G</span>
+    <div>
+      <strong>GECAA</strong>
+      <span class="sub">Governmental Engine for Climate Adaptation Action</span>
+    </div>
+  </div>
+  <div class="badges" id="badges"></div>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="evaluate" id="tab-evaluate">Evaluate</button>
+      <button role="tab" aria-selected="false" data-tab="reasoning" id="tab-reasoning">Reasoning</button>
+      <button role="tab" aria-selected="false" data-tab="knowledge" id="tab-knowledge">Knowledge</button>
+    </nav>
+
+    <!-- Evaluate -->
+    <section class="tabpane" id="pane-evaluate">
+      <div class="step">
+        <h2><span class="num">1</span>Choose the site</h2>
+        <p class="hint">Click a sample parcel on the map, or draw your own parcel inside the dashed data area.</p>
+        <div class="row">
+          <select id="sample-select" aria-label="Sample parcel"><option value="">Sample parcels…</option></select>
+          <button class="btn secondary" id="draw-btn" type="button">Draw a parcel</button>
+        </div>
+        <div class="site-card" id="site-card" hidden></div>
+      </div>
+
+      <form class="step" id="site-form">
+        <h2><span class="num">2</span>Site details</h2>
+        <label for="measure">Measure</label>
+        <select id="measure"></select>
+        <div class="grid2">
+          <div>
+            <label for="connected">Connected sealed area (m²)</label>
+            <input id="connected" type="number" min="0" step="10" placeholder="e.g. 2400">
+            <small>Roofs and paved areas that drain into the system.</small>
+          </div>
+          <div>
+            <label for="available">Free area for the swale (m²)</label>
+            <input id="available" type="number" min="0" step="10" placeholder="e.g. 400">
+            <small>Unsealed area where the swale could go.</small>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Contaminated sites register (Altlastenkataster)</legend>
+          <label class="radio"><input type="radio" name="contamination" value="none_known"> No contamination known</label>
+          <label class="radio"><input type="radio" name="contamination" value="suspected"> Contamination suspected</label>
+          <label class="radio"><input type="radio" name="contamination" value="unknown" checked> Not checked yet</label>
+        </fieldset>
+        <button class="btn primary" id="evaluate-btn" type="submit" disabled>Evaluate</button>
+        <p class="error" id="eval-error" hidden></p>
+      </form>
+
+      <div id="result" hidden></div>
+    </section>
+
+    <!-- Reasoning -->
+    <section class="tabpane" id="pane-reasoning" hidden>
+      <p class="hint">The blueprint is a Bayesian network. Inputs from the site (top) flow into checks and the overall result (bottom). Click a node to see its rules and sources. After an evaluation each node shows its most likely state.</p>
+      <div id="graph" aria-label="Blueprint network graph"></div>
+      <div id="node-detail" class="node-detail"></div>
+    </section>
+
+    <!-- Knowledge -->
+    <section class="tabpane" id="pane-knowledge" hidden>
+      <div class="step">
+        <h2>Federal law, live</h2>
+        <p class="hint">The Knowledge Agent fetches the current text of each federal provision from the federal legal information system (NeuRIS, test phase), stores it with date and fingerprint, and flags any change for expert review.</p>
+        <button class="btn primary" id="refresh-btn" type="button">Check federal law for updates</button>
+        <div id="refresh-result"></div>
+      </div>
+      <div id="provisions"></div>
+    </section>
+  </aside>
+
+  <main class="mapwrap">
+    <div id="map" aria-label="Map"></div>
+    <div class="layers" id="layers" aria-label="Map layers"></div>
+  </main>
+</div>
+
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<script src="/static/vendor/geoman/leaflet-geoman.min.js"></script>
+<script src="/static/vendor/cytoscape/cytoscape.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

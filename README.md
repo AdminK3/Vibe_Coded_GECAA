@@ -42,16 +42,34 @@ demo-c     not feasible                  52%  (open)
 
 ## Try it
 
-**With Docker** (nothing else to install):
+**In GitHub Codespaces** (nothing to install): on the repository page click
+**Code → Codespaces → Create codespace on main**. The app installs and starts by
+itself and opens in a new browser tab.
+
+**With Docker:**
 
 ```bash
 docker compose up --build
 ```
 
-Then open:
+Then open http://localhost:8000 for the app, or http://localhost:8000/docs for the API.
 
-- http://localhost:8000/v1/demo/demo-c – a sample report
-- http://localhost:8000/docs – the interactive API
+### The app
+
+- **Evaluate:** pick a sample parcel or draw your own on the map, enter the
+  sealed and free area and what the contaminated sites register says, and
+  press Evaluate. The parcel is coloured by the result, and the panel shows the
+  verdict, what would settle an open result, the reasoning and the evidence.
+  Every citation opens the source in the Knowledge tab. You can open a
+  printable report or download the data as JSON.
+- **Map layers:** soil permeability, groundwater depth, slope and water
+  protection zones, classified with the same thresholds the evaluation uses.
+- **Reasoning:** the blueprint's Bayesian network as a live graph. Click a node
+  to see its rule table and sources; after an evaluation every node shows its
+  most likely state.
+- **Knowledge:** all provisions with summaries and sources. "Check federal law
+  for updates" asks the federal legal information system (NeuRIS) for the
+  current texts, stores them with date and fingerprint and reports changes.
 
 **With Python 3.11 or newer:**
 
@@ -107,7 +125,8 @@ of the law they used.
 | Bayesian Evaluation Engine | Compiles blueprints into Bayesian networks | [pgmpy](https://pgmpy.org) |
 | Spatial pipeline | Turns geodata into probabilistic evidence | [rasterio](https://rasterio.readthedocs.io), [Shapely](https://shapely.readthedocs.io) |
 | Reports | Self-contained HTML with numbered citations | [Jinja2](https://jinja.palletsprojects.com) |
-| REST API | Evaluations, blueprints, provisions | [FastAPI](https://fastapi.tiangolo.com) |
+| REST API | Evaluations, blueprints, provisions, map layers | [FastAPI](https://fastapi.tiangolo.com) |
+| Web app | Map, drawing, reasoning graph | [Leaflet](https://leafletjs.com), [Leaflet-Geoman](https://geoman.io) (free edition), [Cytoscape.js](https://js.cytoscape.org), bundled locally, no CDN |
 
 All dependencies use permissive licences (MIT, BSD, Apache-2.0), so the whole
 project can be released under Apache-2.0. See [docs/architecture.md](docs/architecture.md)
@@ -125,6 +144,7 @@ src/gecaa/
   knowledge/         NeuRIS client and versioned snapshot store
   spatial/           geodata to evidence
   report/            HTML report
+  web/               the web app (with bundled open-source libraries in web/vendor)
   api.py, cli.py     interfaces
 tests/               pytest suite
 ```

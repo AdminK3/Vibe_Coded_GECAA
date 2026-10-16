@@ -166,3 +166,11 @@ class NeurisClient:
             raise LookupError(f"could not locate {provision.citation} in {doc_path}")
         span = f"§ {para}" + (f" Abs. {absatz}" if absatz else "")
         return store.save(provision.id, excerpt, self._url(doc_path), "neuris-api", text_span=span)
+
+
+# Search terms that find each federal law in NeuRIS, keyed by ELI.
+SEARCH_TERMS = {"eli/bund/bgbl-1/2009/s2585": "Wasserhaushaltsgesetz"}
+
+
+def search_term_for(provision: Provision) -> str:
+    return SEARCH_TERMS.get(provision.eli or "", provision.title.split(" - ")[0])

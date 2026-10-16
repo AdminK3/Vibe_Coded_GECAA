@@ -96,7 +96,10 @@ def _phi(z: float) -> float:
 def _raster_values(path: str, parcel: Parcel) -> tuple[np.ndarray, Any]:
     with rasterio.open(path) as src:
         geom = parcel.in_crs(src.crs.to_string())
-        data, _ = rio_mask(src, [geom], crop=True, all_touched=True, filled=False)
+        try:
+            data, _ = rio_mask(src, [geom], crop=True, all_touched=True, filled=False)
+        except ValueError as exc:  # rasterio: "Input shapes do not overlap raster"
+            raise ValueError(f"parcel {parcel.id} lies outside the site data") from exc
         values = data[0].compressed()
         nodata = src.nodata
         if nodata is not None:
