@@ -170,6 +170,11 @@ class NRWProvider:
             MapLayer("wsg", "Wasserschutzgebiete", WSG_WMS, "4,3,2,1", "© LANUK NRW", opacity=0.55, min_zoom=9),
             MapLayer("starkregen", "Starkregen: Fließgeschwindigkeit (außergewöhnlich)", STARKREGEN_WMS, "nw_geschw_agw",
                      "© BKG (dl-de/by-2-0)", opacity=0.7, min_zoom=12),
+            MapLayer("bkg_tiefe", "BKG Hinweiskarte: Wassertiefe (100-jährlich)", STARKREGEN_WMS, "nw_tiefe_agw",
+                     "© BKG (dl-de/by-2-0)", opacity=0.7, min_zoom=12),
+            MapLayer("pet", "Klimaanalyse: Wärmebelastung PET (typischer Sommertag)",
+                     "https://www.wms.nrw.de/umwelt/klimaanpassung_klimaanalyse", "54", "© LANUK NRW (dl-de/zero-2-0)",
+                     opacity=0.6, min_zoom=10),
         ]
 
     # ------------------------------------------------------------- plumbing
@@ -353,3 +358,73 @@ class NRWProvider:
         _, kind, zone, name = sorted(hits, key=lambda h: order.get(h[2], 5))[0]
         return InputValue(abbr="WSG", value="geplant", source=src, level="unit", quality=Quality.hoch,
                           note=f"Geplantes {kind}schutzgebiet {name}, Zone {zone}: Verfahren läuft, Einstufung durch die Behörde.")
+
+    # ------------------------------------------------------------- v3: terrain, land use, climate analysis
+
+    DGM_WCS = "https://www.wcs.nrw.de/geobasis/wcs_nw_dgm"
+    KLIMA_WMS = "https://www.wms.nrw.de/umwelt/klimaanpassung_klimaanalyse"
+
+    def dem(self, bbox_utm: tuple[float, float, float, float]):
+        """DGM1 (1 m terrain without buildings) for the box, as (array, x_left, y_top, res=1.0)."""
+        import numpy as np
+        from rasterio.io import MemoryFile
+
+        x0, y0, x1, y1 = (int(round(v)) for v in bbox_utm)
+        if (x1 - x0) * (y1 - y0) > 1_500_000:
+            raise ValueError("Geländeausschnitt zu groß")
+        key = hashlib.sha1(f"dgm{x0},{y0},{x1},{y1}".encode()).hexdigest()
+        path = self.cache_dir / f"{key}.tif" if self.cache_dir else None
+        if path and path.exists():
+            content = path.read_bytes()
+        else:
+            r = httpx.get(self.DGM_WCS, headers=UA, timeout=60, params=[
+                ("SERVICE", "WCS"), ("VERSION", "2.0.1"), ("REQUEST", "GetCoverage"), ("COVERAGEID", "nw_dgm"),
+                ("FORMAT", "image/tiff"), ("SUBSET", f"x({x0},{x1})"), ("SUBSET", f"y({y0},{y1})")])
+            r.raise_for_status()
+            if not r.content.startswith((b"II*", b"MM\x00*")):
+                raise RuntimeError("Geländemodell-Dienst lieferte kein GeoTIFF")
+            content = r.content
+            if path:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+        with MemoryFile(content) as mf, mf.open() as ds:
+            a = ds.read(1).astype("float64")
+            if ds.nodata is not None:
+                a[a == ds.nodata] = np.nan
+            return a, ds.bounds.left, ds.bounds.top, float(ds.res[0])
+
+    def landuse(self, bbox_utm) -> list[dict]:
+        """ALKIS actual land use (Tatsächliche Nutzung): [{'nutzart', 'bez', 'geometry' (shapely, EPSG:25832)}]."""
+        feats = self._wfs("Nutzung", bbox_utm, count=5000)
+        return [{"nutzart": f["properties"].get("nutzart", ""), "bez": f["properties"].get("bez", ""),
+                 "geometry": f["geometry"]} for f in feats]
+
+    def buildings_utm(self, bbox_utm) -> list[dict]:
+        feats = self._wfs("GebaeudeBauwerk", bbox_utm, count=5000)
+        return [{"id": f["properties"].get("oid") or f"geb-{i}",
+                 "function": f["properties"].get("gebnutzbez") or f["properties"].get("funktion") or "Gebäude",
+                 "storeys": f["properties"].get("anzahlgs"), "geometry": f["geometry"]} for i, f in enumerate(feats)]
+
+    def climate_analysis(self, x: float, y: float) -> dict:
+        """LANUK Klimaanalyse NRW at a point: PET (day) and air temperature (night), typical and extreme day."""
+        layers = {"pet_typisch": "54", "pet_extrem": "52", "nacht_typisch": "38", "nacht_extrem": "29"}
+        out = {}
+        for key, layer in layers.items():
+            feats = self._feature_info(self.KLIMA_WMS, layer, x, y)
+            v = next((f.get("Classify.PixelValue") for f in feats if f.get("Classify.PixelValue")), None)
+            out[key] = _num(v)
+        feats = self._feature_info(self.KLIMA_WMS, "18", x, y)
+        if feats:
+            f = feats[0]
+            out["versiegelung_pct"] = _num(f.get("vsg_men"))
+        return out
+
+    def bkg_depth(self, x: float, y: float) -> dict:
+        """BKG Hinweiskarte Starkregengefahren NRW: maximum water depth at a point (100-year and extreme event)."""
+        out = {}
+        for key, layer in (("agw", "nw_tiefe_agw"), ("extrem", "nw_tiefe_extrem")):
+            feats = self._feature_info(STARKREGEN_WMS, layer, x, y)
+            vals = [v for f in feats for k, v in f.items() if "tiefe" in k.lower() or "value" in k.lower()]
+            out[key] = next((_num(v) for v in vals if _num(v) is not None), None)
+            out[key + "_raw"] = feats[:1]
+        return out

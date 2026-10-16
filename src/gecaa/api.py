@@ -37,6 +37,9 @@ app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 from .api_v2 import router as v2_router  # noqa: E402
 
 app.include_router(v2_router)
+from .api_v3 import router as v3_router  # noqa: E402
+
+app.include_router(v3_router)
 
 
 @app.get("/", include_in_schema=False)

@@ -1,0 +1,13 @@
+# Source: CLIMAAX FLOODS workflow, 00_Input_files_for_damage_analysis/JRC_damage_curves.csv
+# https://github.com/CLIMAAX/FLOODS  (Apache-2.0 OR CC-BY-4.0); values from Huizinga, de Moel & Szewczyk (2017),
+# Global flood depth-damage functions, EUR 28552 EN, doi:10.2760/16510 (European curves). Column 'indusrial' sic.
+depth_m,residential,commercial,indusrial,agricultural, Transport, Infrastructure - Roads
+0,0.00,0.00,0.00,0.00, 0.00, 0.00
+0.5,0.25,0.15,0.15,0.30, 0.32, 0.25
+1,0.40,0.30,0.27,0.55, 0.54, 0.42
+1.5,0.50,0.45,0.40,0.65, 0.70, 0.55
+2,0.60,0.55,0.52,0.75, 0.83, 0.65
+3,0.75,0.75,0.70,0.85, 1.00, 0.80
+4,0.85,0.90,0.85,0.95, 1.00, 0.90
+5,0.95,1.00,1.00,1.00, 1.00, 1.00
+6,1.00,1.00,1.00,1.00, 1.00, 1.00

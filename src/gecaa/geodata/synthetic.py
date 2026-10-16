@@ -93,3 +93,40 @@ class SyntheticProvider:
         hit = next((z for z in order if z in zones), "kein")
         return InputValue(abbr="WSG", value=hit, source="Synthetische Demodaten: Wasserschutzzonen", level="unit",
                           quality=Quality.mittel, note="erfundene Zonen")
+
+    # ------------------------------------------------------------- v3: terrain and buildings in metres
+
+    def dem(self, bbox_utm):
+        from rasterio.windows import from_bounds
+        with rasterio.open(self.folder / "dem.tif") as src:
+            l, b, r, t = src.bounds
+            x0, y0, x1, y1 = max(bbox_utm[0], l), max(bbox_utm[1], b), min(bbox_utm[2], r), min(bbox_utm[3], t)
+            if x0 >= x1 or y0 >= y1:
+                raise ValueError("Ausschnitt liegt außerhalb der Demodaten")
+            win = from_bounds(x0, y0, x1, y1, src.transform).round_offsets().round_lengths()
+            a = src.read(1, window=win).astype("float64")
+            tr = src.window_transform(win)
+            if src.nodata is not None:
+                a[a == src.nodata] = np.nan
+            return a, tr.c, tr.f, float(src.res[0])
+
+    def landuse(self, bbox_utm):
+        return []
+
+    def buildings_utm(self, bbox_utm):
+        area = box(*bbox_utm)
+        with (self.folder / "buildings.geojson").open() as fh:
+            data = json.load(fh)
+        out = []
+        for f in data["features"]:
+            g = shape(f["geometry"])
+            if g.intersects(area):
+                out.append({"id": f["properties"]["id"], "function": f["properties"].get("function", "Gebäude"),
+                            "storeys": None, "geometry": g})
+        return out
+
+    def climate_analysis(self, x, y):
+        return {}
+
+    def bkg_depth(self, x, y):
+        return {}

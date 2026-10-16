@@ -53,6 +53,13 @@ def main():
     # Terrain: gentle 2 % slope towards the south, steepening to ~13 % in the east.
     east = np.clip((x - 280) / 120, 0, 1)
     dem = 60.0 - 0.02 * y - 0.13 * east * (x - 280).clip(0) + rng.normal(0, 0.02, x.shape)
+    # Heavy-rain features for the v3 demo: a street running south-east, a closed hollow in front of the school,
+    # a dip between the two houses in the south-west and an underpass-like low point next to the business.
+    street = np.exp(-((x - (40 + 0.45 * y)) / 6.0) ** 2) * 0.12
+    hollow_school = 0.40 * np.exp(-(((x - 62) ** 2 + (y - 116) ** 2) / (2 * 12.0 ** 2)))
+    dip_houses = 0.45 * np.exp(-(((x - 102) ** 2 + (y - 355) ** 2) / (2 * 8.0 ** 2)))
+    low_business = 0.7 * np.exp(-(((x - 290) ** 2 + (y - 147) ** 2) / (2 * 6.0 ** 2)))
+    dem = dem - street - hollow_school - dip_houses - low_business
     write("dem.tif", dem, "Synthetic terrain, m above sea level")
 
     # Permeability as log10(kf in m/s): sandy west (-4.5), clayey east (-6.8).
