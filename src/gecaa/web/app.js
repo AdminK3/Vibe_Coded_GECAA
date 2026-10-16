@@ -78,10 +78,12 @@ function initMap() {
   const [w, s, e, n] = state.dataset.bounds;
   const map = L.map("map", { zoomControl: true });
   state.map = map;
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 20, maxNativeZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  }).addTo(map);
+  // Official German basemap from the Federal Agency for Cartography and Geodesy (BKG), CC BY 4.0.
+  const basemap = (style) => L.tileLayer(
+    `https://sgx.geodatenzentrum.de/wmts_basemapde/tile/1.0.0/de_basemapde_web_raster_${style}/default/GLOBAL_WEBMERCATOR/{z}/{y}/{x}.png`,
+    { maxZoom: 20, maxNativeZoom: 18, attribution: '&copy; <a href="https://basemap.de" target="_blank" rel="noopener">basemap.de</a> / BKG (CC BY 4.0)' });
+  const colour = basemap("farbe").addTo(map);
+  L.control.layers({ "basemap.de colour": colour, "basemap.de grey": basemap("grau") }, null, { position: "bottomleft" }).addTo(map);
   const extent = L.latLngBounds([s, w], [n, e]);
   L.rectangle(extent, { color: "#0a5c8f", weight: 2, dashArray: "6 6", fill: false, interactive: false }).addTo(map);
   map.fitBounds(extent.pad(0.15));
