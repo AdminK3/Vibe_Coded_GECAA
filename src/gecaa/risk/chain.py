@@ -24,7 +24,7 @@ from . import damage, engine_client, raster_png, scenario
 from .hydrology import d8_receivers, ponding, priority_flood
 
 BUFFER_M = 100.0             # extra terrain around the box so nearby water reaches the site
-BUILDING_RAISE_M = 5.0       # buildings as obstacles in the terrain (DGM has no buildings)
+BUILDING_RAISE_M = 0.5       # buildings as obstacles (DGM has no buildings); above this, water enters doors/gateways
 RING_M = 2.0                 # water depth at a building = maximum within 2 m around its footprint
 DEMO_RAIN = {1: 20.0, 2: 24.0, 3: 27.0, 5: 30.0, 10: 35.0, 20: 39.0, 30: 42.0, 50: 46.0, 100: 51.0}
 
@@ -104,6 +104,8 @@ def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_s
          "text": "Rauheit nach Manning n: versiegelt 0,016 · teilversiegelt 0,025 · Grün 0,05 s/m^(1/3)."},
         {"id": "A2", "art": "Annahme", "quelle": "GECAA",
          "text": f"Gebäude als Hindernis um {BUILDING_RAISE_M:g} m erhöht (das Geländemodell DGM1 enthält keine Gebäude); "
+                 "höheres Wasser dringt durch Türen und Tore ein oder fließt durch Durchfahrten ab – Innenhöfe laufen "
+                 f"daher nicht unbegrenzt voll. Überdachungen und sonstige Bauwerke sind kein Hindernis. "
                  f"Wassertiefe am Gebäude = größte Tiefe im {RING_M:g}-m-Streifen um den Grundriss."},
         {"id": "A3", "art": "Vereinfachung" if req.sewer_mm == 0 else "Annahme", "quelle": "Eingabe",
          "text": "Kanalnetz nicht berücksichtigt (ungünstiger Fall)." if req.sewer_mm == 0 else
@@ -183,6 +185,7 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
             if geoms:
                 m = rasterize(((g, 1) for g in geoms), out_shape=shape_rc, transform=tr, fill=0, dtype="uint8")
                 coeff[m == 1] = c
+    blds = [b for b in blds if not b.get("structure")]          # canopies etc.: no walls, no contents
     bld_geoms = [b["geometry"] for b in blds]
     bld_mask = (rasterize(((g, 1) for g in bld_geoms), out_shape=shape_rc, transform=tr, fill=0, dtype="uint8") == 1
                 if bld_geoms else np.zeros(shape_rc, bool))
@@ -262,7 +265,8 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
         cls = damage.classify(b["function"])
         c = g.centroid
         lon, lat = to_wgs(c)["coordinates"]
-        buildings.append(damage.Building(id=str(b["id"]), label=b["function"], cls=cls, footprint_m2=round(g.area, 1),
+        buildings.append(damage.Building(id=str(b["id"]), label=b["function"] + (f", {b['address']}" if b.get("address") else ""),
+                                         cls=cls, footprint_m2=round(g.area, 1),
                                          x=c.x, y=c.y, value_eur=damage.building_value(cls, g.area),
                                          geometry=to_wgs(g)))
         buildings[-1].lonlat = (lon, lat)
@@ -350,15 +354,20 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
                  for s in req.scenarios if scenario.SCENARIOS[s] > 0]
 
     comparison = []
-    if hasattr(provider, "bkg_depth") and provider.id == "nrw":
-        for b in b_out[:5]:
-            bb = next(x for x in buildings if x.id == b["id"])
+    if hasattr(provider, "bkg_depth") and provider.id == "nrw" and 100 in req.rps:
+        ev100 = events[(base_sc, 100)]["base"].depth.ravel()
+        pos = {b.id: k for k, b in enumerate(buildings)}
+        for b in b_out[:8]:
+            idx = ring_idx[pos[b["id"]]]
+            cell = int(idx[np.argmax(ev100[idx])])
+            r_, c_ = divmod(cell, shape_rc[1])
+            px, py = x_left + (c_ + 0.5) * res, y_top - (r_ + 0.5) * res
             try:
-                v = provider.bkg_depth(bb.x, bb.y + 0)
-                comparison.append({"id": b["id"], "label": b["label"], "gecaa_rp100": b["depth"].get("100"),
-                                   "bkg_agw": v.get("agw"), "bkg_extrem": v.get("extrem")})
+                v = provider.bkg_depth(px, py)
             except Exception:  # comparison is optional
                 break
+            comparison.append({"id": b["id"], "label": b["label"], "gecaa_rp100": b["depth"].get("100"),
+                               "bkg_agw": v.get("agw"), "bkg_extrem": v.get("extrem")})
 
     step("Ergebnis")
     return {

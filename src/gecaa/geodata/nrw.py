@@ -144,6 +144,12 @@ def parse_feature_info(xml_text: str) -> list[dict]:
     return feats
 
 
+def _building_label(p: dict) -> str:
+    """ALKIS: 'funktion' is the specific use (e.g. 'Allgemein bildende Schule'); 'gebnutzbez' only a group."""
+    name, fkt = p.get("name"), p.get("funktion") or p.get("gebnutzbez") or "Gebäude"
+    return f"{name} ({fkt})" if name else fkt.split(";")[0]
+
+
 class NRWProvider:
     id = "nrw"
     label = "Offene Geodaten NRW (live)"
@@ -261,8 +267,8 @@ class NRWProvider:
         for i, f in enumerate(feats):
             p = f["properties"]
             out.append({"type": "Feature", "geometry": to_wgs(f["geometry"]),
-                        "properties": {"id": p.get("oid") or f"geb-{i}", "function": p.get("gebnutzbez") or p.get("funktion") or "Gebäude",
-                                       "storeys": p.get("anzahlgs"), "source": "ALKIS NRW"}})
+                        "properties": {"id": p.get("oid") or f"geb-{i}", "function": _building_label(p),
+                                       "storeys": p.get("anzahlgs"), "address": p.get("lagebeztxt"), "source": "ALKIS NRW"}})
         return {"type": "FeatureCollection", "features": out}
 
     # ------------------------------------------------------------- soil map BK50
@@ -401,9 +407,10 @@ class NRWProvider:
 
     def buildings_utm(self, bbox_utm) -> list[dict]:
         feats = self._wfs("GebaeudeBauwerk", bbox_utm, count=5000)
-        return [{"id": f["properties"].get("oid") or f"geb-{i}",
-                 "function": f["properties"].get("gebnutzbez") or f["properties"].get("funktion") or "Gebäude",
-                 "storeys": f["properties"].get("anzahlgs"), "geometry": f["geometry"]} for i, f in enumerate(feats)]
+        return [{"id": f["properties"].get("oid") or f"geb-{i}", "function": _building_label(f["properties"]),
+                 "storeys": f["properties"].get("anzahlgs"), "address": f["properties"].get("lagebeztxt"),
+                 "structure": str(f["properties"].get("gebnutzbez", "")).startswith("Sonstiges Bauwerk"),
+                 "geometry": f["geometry"]} for i, f in enumerate(feats)]
 
     def climate_analysis(self, x: float, y: float) -> dict:
         """LANUK Klimaanalyse NRW at a point: PET (day) and air temperature (night), typical and extreme day."""
@@ -420,11 +427,19 @@ class NRWProvider:
         return out
 
     def bkg_depth(self, x: float, y: float) -> dict:
-        """BKG Hinweiskarte Starkregengefahren NRW: maximum water depth at a point (100-year and extreme event)."""
+        """BKG Hinweiskarte Starkregengefahren NRW: maximum water depth (m) at a point, 100-year and extreme event.
+
+        GetFeatureInfo as JSON (verified): properties.Tiefe in centimetres, -9999 = no water."""
         out = {}
         for key, layer in (("agw", "nw_tiefe_agw"), ("extrem", "nw_tiefe_extrem")):
-            feats = self._feature_info(STARKREGEN_WMS, layer, x, y)
-            vals = [v for f in feats for k, v in f.items() if "tiefe" in k.lower() or "value" in k.lower()]
-            out[key] = next((_num(v) for v in vals if _num(v) is not None), None)
-            out[key + "_raw"] = feats[:1]
+            text = self._get(STARKREGEN_WMS, {
+                "SERVICE": "WMS", "VERSION": "1.3.0", "REQUEST": "GetFeatureInfo", "LAYERS": layer, "QUERY_LAYERS": layer,
+                "STYLES": "", "CRS": "EPSG:25832", "BBOX": f"{x - 1:.2f},{y - 1:.2f},{x + 1:.2f},{y + 1:.2f}",
+                "WIDTH": "3", "HEIGHT": "3", "I": "1", "J": "1", "INFO_FORMAT": "application/json"})
+            try:
+                feats = json.loads(text).get("features", [])
+            except ValueError:
+                feats = []
+            v = next((f["properties"].get("Tiefe") for f in feats if "Tiefe" in f.get("properties", {})), None)
+            out[key] = None if v is None else (0.0 if v <= -9000 else round(float(v) / 100.0, 2))
         return out
