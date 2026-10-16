@@ -11,8 +11,10 @@ def client():
 
 
 def test_web_app_served_without_cdn(client):
-    html = client.get("/").text
+    html = client.get("/v1").text
     assert "GECAA" in html and "/static/app.js" in html
+    v2 = client.get("/").text
+    assert "/static/v2.js" in v2 and 'src="http' not in v2
     assert 'src="http' not in html and 'href="http' not in html   # no third-party scripts or styles
     for path in ["/static/app.js", "/static/style.css", "/static/vendor/leaflet/leaflet.js",
                  "/static/vendor/geoman/leaflet-geoman.min.js", "/static/vendor/cytoscape/cytoscape.min.js"]:

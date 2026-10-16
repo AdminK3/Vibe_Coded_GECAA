@@ -29,6 +29,7 @@ dependencies = [
   "jinja2>=3.1",           # BSD-3-Clause - reports
   "fastapi>=0.110",        # MIT - REST API
   "uvicorn>=0.29",         # BSD-3-Clause - API server
+  "pyproj>=3.6",           # MIT - coordinate transformation (ETRS89/UTM32 <-> WGS84)
 ]
 
 [project.optional-dependencies]

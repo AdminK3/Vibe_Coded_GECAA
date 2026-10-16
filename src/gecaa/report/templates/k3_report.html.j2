@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ r.logic_title }}{% if site_name %} · {{ site_name }}{% endif %}</title>
+<style>
+  :root{--ink:#16232b;--muted:#5a6a73;--line:#d7dfe3;--bg:#f4f6f8;--paper:#fff;--accent:#0a5c8f;
+        --pass:#2b7a3d;--pass-bg:#e2f2e5;--open:#8a5800;--open-bg:#fbefd4;--block:#a5312a;--block-bg:#f8e1df;--part:#6b6b00;--part-bg:#f3f1cf;
+        --sans:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;--mono:ui-monospace,Consolas,monospace}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans)}
+  main{max-width:900px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-left)) 64px;background:var(--paper)}
+  .mast{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:3px solid var(--accent);padding-bottom:12px}
+  .mast .eyebrow{font:600 12px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:24px;line-height:1.2;margin:4px 0}
+  h2{font-size:18px;margin:30px 0 10px;padding-top:10px;border-top:1px solid var(--line)}
+  h3{font-size:15px;margin:16px 0 6px}
+  .meta{color:var(--muted);font-size:13px;margin:0}
+  .banner{border:1px solid var(--open);background:var(--open-bg);color:var(--open);padding:8px 12px;border-radius:6px;margin:12px 0 0;font-size:14px}
+  .verdict{display:flex;gap:16px;align-items:center;padding:16px;border-radius:8px;margin-top:12px;border:1px solid var(--line)}
+  .verdict .big{font-size:22px;font-weight:700}
+  .PASSED{color:var(--pass)} .OPEN{color:var(--open)} .BLOCKED{color:var(--block)} .PARTLY{color:var(--part)}
+  .bg-PASSED{background:var(--pass-bg);border-color:var(--pass)} .bg-OPEN{background:var(--open-bg);border-color:var(--open)}
+  .bg-BLOCKED{background:var(--block-bg);border-color:var(--block)} .bg-PARTLY{background:var(--part-bg);border-color:var(--part)}
+  .sym{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;font-weight:700;font-size:13px;color:#fff;flex:none}
+  .sym.PASSED{background:var(--pass)} .sym.OPEN{background:var(--open)} .sym.BLOCKED{background:var(--block)} .sym.PARTLY{background:var(--part)}
+  .sym.big{width:44px;height:44px;font-size:22px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font:600 11px/1.3 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .tbl{overflow-x:auto}
+  .tag{font:600 11px/1 var(--mono);padding:3px 6px;border-radius:3px;background:#eef2f4;color:var(--muted);white-space:nowrap}
+  .tag.hoch{background:var(--pass-bg);color:var(--pass)} .tag.mittel{background:var(--open-bg);color:var(--open)}
+  .tag.offen{background:var(--block-bg);color:var(--block)}
+  ul.tight{margin:6px 0;padding-left:20px} ul.tight li{margin:3px 0}
+  ol.steps{padding-left:22px} ol.steps li{margin:0 0 10px}
+  .small{font-size:12.5px;color:var(--muted)}
+  .cite{font-size:11px;vertical-align:super} .cite a{color:var(--accent);text-decoration:none}
+  ol.sources{padding-left:22px;font-size:13.5px} ol.sources li{margin-bottom:10px}
+  footer{margin-top:36px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+  @media print{body{background:#fff} main{padding:0} h2{break-after:avoid} tr,.verdict{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+{% macro sym(res, big=False) -%}<span class="sym {{ res }}{{ ' big' if big }}" aria-label="{{ RESULT_DE[res] }}">{{ {'PASSED':'✓','OPEN':'?','BLOCKED':'✕','PARTLY':'◐'}[res] }}</span>{%- endmacro %}
+{% macro cites(basis) -%}{% for b in basis if b in refs %}<span class="cite"><a href="#q{{ refs[b] }}">[{{ refs[b] }}]</a></span>{% endfor %}{%- endmacro %}
+{% macro qtag(q) -%}<span class="tag {{ 'hoch' if q == 'hoch' else 'mittel' if q == 'mittel' else 'offen' if q == 'Annahme offen' else '' }}">{{ q }}</span>{%- endmacro %}
+
+  <div class="mast">
+    <div>
+      <div class="eyebrow">GECAA · Maßnahmenprüfung</div>
+      <h1>{{ r.logic_title }}</h1>
+      <p class="meta">{% if site_name %}{{ site_name }} · {% endif %}Stand {{ created }} · Logik {{ r.logic_id }} v{{ r.logic_version }}</p>
+    </div>
+  </div>
+  {% if r.review_status != "done" %}<div class="banner"><strong>Entwurf der Prüflogik.</strong> Die Logik hat das unabhängige Audit noch nicht durchlaufen. Der Bericht dient der Vorprüfung, nicht der Entscheidung.</div>{% endif %}
+  {% if synthetic %}<div class="banner"><strong>Synthetische Daten.</strong> Die Standortdaten sind erfundene Demodaten, keine echten Werte.</div>{% endif %}
+
+  <h2>0 Fragestellung</h2>
+  <p>Kann an {{ 'dem geplanten Standort' if r.units|length == 1 else 'den ' ~ r.units|length ~ ' geplanten Standorten' }} ein {{ measure }} nach {{ guideline }} errichtet werden?</p>
+  <p class="small">Bewertungseinheit: {{ unit_def }}.</p>
+  <div class="tbl"><table>
+    <tr><th>Standort</th><th>Fläche Standort</th><th>Einzugsgebiet</th><th>Ergebnis</th></tr>
+    {% for u in r.units %}<tr><td>{{ u.name }}</td><td>{{ fmt_m2(u.location_m2) }}</td><td>{{ fmt_m2(u.catchment_m2) if u.catchment_m2 else 'nicht angegeben' }}</td><td>{{ sym(u.result.value) }} {{ RESULT_DE[u.result.value] }}</td></tr>{% endfor %}
+  </table></div>
+
+  <h2>1 Zusammenfassung</h2>
+  <div class="verdict bg-{{ r.result.value }}">
+    {{ sym(r.result.value, True) }}
+    <div><div class="big {{ r.result.value }}">{{ r.result_de|capitalize }}</div>
+    <div class="small">{{ counts.PASSED }} möglich · {{ counts.OPEN }} offen · {{ counts.BLOCKED }} nicht möglich (von {{ r.units|length }} Standort{{ 'en' if r.units|length != 1 }})</div></div>
+  </div>
+  <ul class="tight">
+    {% for u in r.units %}<li><strong>{{ u.name }}</strong>: {{ RESULT_DE[u.result.value] }}{% set bl = u.checks|selectattr('result.value','equalto','BLOCKED')|list %}{% set op = u.checks|selectattr('result.value','equalto','OPEN')|list %}{% if bl %} – ausgeschlossen durch {{ bl|map(attribute='id')|join(', ') }}{% elif op %} – offen: {{ op|map(attribute='id')|join(', ') }}{% endif %}.</li>{% endfor %}
+    {% if passed_catchment %}<li>Angeschlossene Fläche an möglichen Standorten: {{ fmt_m2(passed_catchment) }} (aus den Eingaben).</li>{% endif %}
+    <li>{{ r.open_points|length }} offene Punkt{{ 'e' if r.open_points|length != 1 }}, {{ r.not_coded|length }} Themen der Richtlinie noch nicht codiert.</li>
+  </ul>
+  <p class="small">„Möglich“ heißt: alle codierten Prüfungen sind erfüllt. Es ist kein Nachweis der Richtlinienkonformität und keine fachliche Empfehlung.</p>
+
+  <h2>2 Technische Machbarkeit</h2>
+  <h3>Prüfungen je Standort</h3>
+  <div class="tbl"><table>
+    <tr><th>Prüfung</th>{% for u in r.units %}<th>{{ u.name }}</th>{% endfor %}</tr>
+    {% for c in r.units[0].checks %}<tr><td><strong>{{ c.id }}</strong> {{ c.question }}{% if c.derived %} <span class="tag">abgeleitet</span>{% endif %}{{ cites(c.basis) }}</td>
+      {% for u in r.units %}{% set x = u.checks[loop.index0 if false else 0] %}{% set x = (u.checks|selectattr('id','equalto',c.id)|first) %}<td>{{ sym(x.result.value) }} {{ x.value_display or '' }}{% if x.threshold_display %}<br><span class="small">Soll: {{ x.threshold_display }}</span>{% endif %}</td>{% endfor %}</tr>{% endfor %}
+  </table></div>
+
+  {% for u in r.units %}
+  <h3>{{ u.name }}: {{ RESULT_DE[u.result.value] }}</h3>
+  <ul class="tight">{% for c in u.checks %}<li>{{ sym(c.result.value) }} <strong>{{ c.id }}</strong> {{ c.text }}{% if c.p_passed is not none and c.result.value != 'OPEN' and c.p_passed > 0 and c.p_passed < 1 %} <span class="small">(Datensicherheit: {{ '%.0f'|format(c.p_passed*100) }} %)</span>{% endif %}</li>{% endfor %}</ul>
+  <div class="tbl"><table>
+    <tr><th>Eingabe</th><th>Wert</th><th>Quelle</th><th>Datengüte</th></tr>
+    {% for i in u.inputs %}<tr><td>{{ labels.get(i.abbr, i.abbr) }}</td><td>{{ fmtv(i) }}</td><td>{{ i.source or '–' }}{% if i.note %}<br><span class="small">{{ i.note }}</span>{% endif %}</td><td>{% if i.value is not none %}{{ qtag(i.quality.value) }}{% else %}<span class="tag offen">fehlt</span>{% endif %}</td></tr>{% endfor %}
+  </table></div>
+  {% if u.p_passed is not none %}<p class="small">Wahrscheinlichkeit, dass alle codierten Prüfungen bei der Unsicherheit der Kartendaten erfüllt sind: {{ '%.0f'|format(u.p_passed*100) }} %. Sie ändert das Ergebnis nicht, sie zeigt, wie belastbar es ist.</p>{% endif %}
+  {% endfor %}
+
+  <h3>Noch nicht codiert (nicht bewertet)</h3>
+  <ul class="tight">{% for n in r.not_coded %}<li><strong>{{ n.topic }}</strong> – {{ n.reason }}</li>{% endfor %}</ul>
+
+  <h2>3 Rechtliche Rahmenbedingungen</h2>
+  <ul class="tight">{% for p in legal %}<li><strong>{{ p.citation }}</strong>{{ cites([p.id]) }}: {{ p.summary_de or p.summary }}</li>{% endfor %}</ul>
+  <p class="small">Die Einleitung von Niederschlagswasser in das Grundwasser ist in der Regel erlaubnispflichtig; ob eine Erlaubnisfreiheit greift, entscheidet die Untere Wasserbehörde.</p>
+
+  <h2>4 Kosten und Förderung</h2>
+  <p>Nicht beziffert. Die Prüflogik enthält noch keine Kostenkennwerte und keinen Förderabgleich.</p>
+
+  <h2>5 Erwartete Wirkung</h2>
+  <p>Nicht beziffert. {% if passed_catchment %}Von den möglichen Standorten würde Niederschlagswasser von {{ fmt_m2(passed_catchment) }} angeschlossener Fläche ortsnah versickert (aus den Eingaben).{% endif %}</p>
+
+  <h2>6 Nächste Schritte</h2>
+  {% if r.open_points %}
+  <ol class="steps">{% for p in r.open_points %}<li><strong>{{ p.check }}</strong> – {{ p.text }}{% if p.missing %} Benötigt: {{ p.missing|join(', ') }}.{% endif %}<br><span class="small">Betrifft: {{ p.units|join(', ') }}{% if p.responsible %} · Zuständig: {{ p.responsible }}{% endif %}</span></li>{% endfor %}</ol>
+  {% else %}<p>Keine offenen Punkte in den codierten Prüfungen.</p>{% endif %}
+
+  <h2>Quellen</h2>
+  <ol class="sources">
+    {% for p in sources %}<li id="q{{ loop.index }}"><strong>{{ p.citation }}</strong> · {{ p.title }}{% if p.review_status.value == 'draft' %} <span class="tag">Entwurf</span>{% endif %}<br><span class="small">{% if p.source_uri %}{{ p.source_uri }}{% endif %}{% if p.licence_note %} · {{ p.licence_note }}{% endif %}</span></li>{% endfor %}
+  </ol>
+  <h3>Daten</h3>
+  <ul class="tight">{% for d in r.data_sources %}<li>{{ d.label }} – {{ d.provider }}, Lizenz {{ d.licence }}{% if d.note %} · <span class="small">{{ d.note }}</span>{% endif %}</li>{% endfor %}</ul>
+
+  <footer>Erstellt mit GECAA (Apache-2.0). GECAA unterstützt Entscheidungen und ersetzt sie nicht; es entscheiden die zuständigen Stellen. Jede Aussage dieses Berichts lässt sich auf eine Prüfung, eine Eingabe oder eine genannte Quelle zurückführen.</footer>
+</main>
+</body>
+</html>

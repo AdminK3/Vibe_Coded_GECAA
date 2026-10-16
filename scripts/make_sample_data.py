@@ -98,6 +98,24 @@ def main():
         ],
     }
     (OUT / "parcels.geojson").write_text(json.dumps(parcels, indent=1), encoding="utf-8")
+
+    # Building footprints (synthetic): one or two per parcel, used as catchment and for distances.
+    buildings = {
+        "type": "FeatureCollection",
+        "name": "synthetic_buildings",
+        "crs": {"type": "name", "properties": {"name": CRS}},
+        "features": [
+            {"type": "Feature", "properties": {"id": "B-A1", "function": "Schule"},
+             "geometry": poly([(45, 65), (80, 65), (80, 95), (45, 95)])},
+            {"type": "Feature", "properties": {"id": "B-B1", "function": "Gewerbe"},
+             "geometry": poly([(265, 115), (315, 115), (315, 150), (265, 150)])},
+            {"type": "Feature", "properties": {"id": "B-C1", "function": "Wohnen"},
+             "geometry": poly([(70, 325), (95, 325), (95, 345), (70, 345)])},
+            {"type": "Feature", "properties": {"id": "B-C2", "function": "Wohnen"},
+             "geometry": poly([(110, 325), (135, 325), (135, 345), (110, 345)])},
+        ],
+    }
+    (OUT / "buildings.geojson").write_text(json.dumps(buildings, indent=1), encoding="utf-8")
     print(f"wrote synthetic sample data to {OUT}")
 
 

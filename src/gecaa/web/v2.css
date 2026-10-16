@@ -1,0 +1,45 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* v2 additions on top of style.css */
+:root { --pass: #2b7a3d; --pass-bg: #e2f2e5; --open: #8a5800; --open-bg: #fbefd4; --block: #a5312a; --block-bg: #f8e1df; --part: #6b6b00; --part-bg: #f3f1cf; }
+input[type=search], input[type=text] { width: 100%; padding: 8px 10px; border: 1px solid #9fb0ba; border-radius: 4px; background: #fff; flex: 1 1 200px; min-width: 0; }
+label.inline { display: inline-flex; align-items: center; margin: 0; font-weight: 600; font-size: 14px; }
+.hits { list-style: none; margin: 6px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 6px; max-height: 180px; overflow-y: auto; }
+.hits li button { width: 100%; text-align: left; background: #fff; border: 0; border-bottom: 1px solid var(--line); padding: 7px 10px; font-size: 13px; cursor: pointer; }
+.hits li button:hover, .hits li button:focus-visible { background: var(--accent-soft); }
+
+.unit { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+.unit.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.unit .uhead { display: flex; gap: 8px; align-items: center; }
+.unit .uhead input { flex: 1; font-weight: 600; border: 1px solid transparent; padding: 4px 6px; border-radius: 4px; }
+.unit .uhead input:hover, .unit .uhead input:focus { border-color: #9fb0ba; }
+.unit .meta { font-size: 13px; color: var(--muted); margin: 4px 0 6px; }
+.unit details { margin-top: 6px; font-size: 14px; }
+.unit summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 13px; }
+.icon-btn { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+.icon-btn:hover { background: var(--bad-bg); color: var(--bad); }
+.field { margin-top: 8px; }
+.field label { margin: 0 0 3px; font-size: 13px; }
+.field small { margin-top: 2px; }
+
+.sym { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-weight: 700; font-size: 13px; color: #fff; flex: none; }
+.sym.PASSED { background: var(--pass); } .sym.OPEN { background: var(--open); } .sym.BLOCKED { background: var(--block); } .sym.PARTLY { background: var(--part); }
+.sym.big { width: 40px; height: 40px; font-size: 20px; }
+.ampel { display: flex; gap: 12px; align-items: center; border-radius: 8px; padding: 14px; border: 1px solid var(--line); margin-bottom: 12px; }
+.ampel .big { font-size: 20px; font-weight: 700; }
+.bg-PASSED { background: var(--pass-bg); border-color: var(--pass); } .bg-OPEN { background: var(--open-bg); border-color: var(--open); }
+.bg-BLOCKED { background: var(--block-bg); border-color: var(--block); } .bg-PARTLY { background: var(--part-bg); border-color: var(--part); }
+.c-PASSED { color: var(--pass); } .c-OPEN { color: var(--open); } .c-BLOCKED { color: var(--block); } .c-PARTLY { color: var(--part); }
+.ucard { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+.ucard > .uh { display: flex; gap: 8px; align-items: center; padding: 10px 12px; font-weight: 600; cursor: pointer; }
+.ucard .checks { padding: 0 12px 10px; }
+.chk { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.chk .q { font-weight: 600; font-size: 13px; }
+.chk .v { font-size: 12.5px; color: var(--muted); }
+.dq { font: 600 11px/1 var(--mono); padding: 2px 5px; border-radius: 3px; background: #eef2f4; color: var(--muted); }
+.dq.hoch { background: var(--pass-bg); color: var(--pass); } .dq.mittel { background: var(--open-bg); color: var(--open); } .dq.offen { background: var(--block-bg); color: var(--block); }
+.tagd { font: 600 10px/1 var(--mono); padding: 2px 5px; border-radius: 3px; background: #eef2f4; color: var(--muted); }
+.steps-list { padding-left: 20px; font-size: 14px; } .steps-list li { margin-bottom: 8px; }
+table.logic { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 8px 0 16px; }
+table.logic th, table.logic td { border-bottom: 1px solid var(--line); padding: 5px 4px; text-align: left; vertical-align: top; }
+table.logic th { font: 600 11px/1.3 var(--mono); color: var(--muted); text-transform: uppercase; }
+.wait { color: var(--muted); font-size: 13px; }

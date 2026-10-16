@@ -45,16 +45,32 @@ flowchart LR
 | 6 | REST API | FastAPI with OpenAPI docs | Authentication with Keycloak; OGC API Processes via pygeoapi for the spatial checks |
 | 7 | Regulatory Knowledge Schema | LinkML schema, draft 0.1 | Alignment with LDML.de / Akoma Ntoso identifiers and W3C PROV; publish JSON Schema and RDF |
 
+## Version 2: K3 logic engine and live NRW data
+
+| Module | Role |
+|---|---|
+| `k3/model.py`, `k3/engine.py` | K3 logic: inputs, parameters (PAxx), calculations (CAxx), checks (CHxx) with PASSED / OPEN / BLOCKED; unit and site aggregation (PARTLY = teilweise versickerbar); Monte Carlo probability as extra detail only |
+| `k3/service.py` | Builds each evaluation unit (location + catchment), fetches inputs from a geodata provider, user values override map values |
+| `geodata/nrw.py` | Live NRW provider: ALKIS WFS (GML parsed directly), BK50 and WSG via WMS GetFeatureInfo; answers cached for 7 days in `data/cache/nrw` |
+| `geodata/synthetic.py` | Offline provider on the demo data, for tests |
+| `report/k3_render.py` | German report, sections 0–6 |
+| `api_v2.py`, `web/v2.*` | `/v2` REST endpoints and the German start page |
+
+Known gaps in v2: no open statewide service for contaminated sites or for depth to
+groundwater at site scale (BK50 classes are used and marked "abgeleitet"); BK50 is often
+empty in sealed city centres, so kf and groundwater stay OPEN there; the WSG query uses one
+point per location; the DGM1 WCS (slope, sinks) is not used yet.
+
 ## Roadmap for the next slices
 
 1. **Expert review of the swale-trench blueprint** with the regulatory domain
    expert, then benchmark against real past cases from partner municipalities.
-2. **Real data for one pilot area** (for example Kreis Mettmann): soil map,
-   groundwater, DGM1 and water protection zones.
-3. **Distance to buildings and the development plan** as further nodes.
+2. **Better groundwater data:** derive depth from the LANUK groundwater surface
+   (GW-Gleichen 2006–2015) minus DGM1 instead of BK50 classes.
+3. **Development plan** (XPlanung) and distances to parcel boundaries as further checks.
 4. **A second measure** (green roof or tree pit) to prove blueprints generalise.
 5. **Costs and funding matching** with 20-year maintenance projections.
-6. **German-language reports** and a KERN-based web interface.
+6. **KERN-based web interface** and PDF export of the German report.
 
 ## Licence rule for contributions
 

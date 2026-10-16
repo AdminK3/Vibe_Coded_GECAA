@@ -20,6 +20,7 @@
   summary: >-
     Using a body of water, which includes groundwater, needs a permit
     (Erlaubnis) from the water authority unless the law says otherwise.
+  summary_de: "Die Benutzung eines Gewässers, auch des Grundwassers, bedarf einer Erlaubnis der Wasserbehörde, soweit das Gesetz nichts anderes bestimmt."
   review_status: draft
 
 - id: whg_9_1_4
@@ -33,6 +34,7 @@
     Bringing or discharging substances into waters counts as a use of water.
     Letting rainwater seep into the groundwater therefore usually counts as a
     use that needs a permit.
+  summary_de: "Das Einbringen und Einleiten von Stoffen in Gewässer ist eine Benutzung. Die Versickerung von Niederschlagswasser ins Grundwasser ist daher in der Regel erlaubnispflichtig."
   review_status: draft
 
 - id: whg_46_2
@@ -46,6 +48,7 @@
     Harmless infiltration of rainwater into groundwater can be exempt from the
     permit requirement where an ordinance provides for it. Whether an
     exemption applies depends on federal and state ordinances.
+  summary_de: "Die schadlose Versickerung von Niederschlagswasser kann erlaubnisfrei sein, soweit eine Rechtsverordnung das bestimmt. Ob das zutrifft, hängt von Bundes- und Landesverordnungen ab."
   review_status: draft
 
 - id: whg_55_2
@@ -61,6 +64,7 @@
     water law, other public law and water management concerns do not stand
     against it. This is the federal principle behind decentralised rainwater
     management such as swale-trench systems.
+  summary_de: "Niederschlagswasser soll ortsnah versickert, verrieselt oder ohne Vermischung mit Schmutzwasser in ein Gewässer eingeleitet werden, soweit keine rechtlichen oder wasserwirtschaftlichen Belange entgegenstehen. Das ist der bundesrechtliche Grundsatz der dezentralen Regenwasserbewirtschaftung."
   review_status: draft
 
 - id: whg_52
@@ -74,6 +78,7 @@
     Water protection zones are set by ordinance. Within them, actions that
     could endanger drinking water can be prohibited or restricted. The rules
     differ by zone; the inner zones (I and II) are the strictest.
+  summary_de: "Wasserschutzgebiete werden durch Verordnung festgesetzt. Darin können Handlungen verboten oder beschränkt werden, die das Trinkwasser gefährden; am strengsten in den Zonen I und II."
   review_status: draft
 
 - id: lwg_nrw_44
@@ -87,6 +92,7 @@
     to the sewer system for the first time after 1 January 1996, rainwater
     is to be infiltrated, trickled or discharged locally where this is
     possible without harm. To be confirmed against the current version.
+  summary_de: "Regelung des Landes NRW zur Beseitigung von Niederschlagswasser: Bei Grundstücken, die nach dem 1. Januar 1996 erstmals bebaut oder angeschlossen wurden, ist Niederschlagswasser ortsnah zu versickern, zu verrieseln oder einzuleiten, wenn das schadlos möglich ist. Am geltenden Wortlaut zu prüfen."
   review_status: draft
 
 - id: nrw_wsg_ordinance
@@ -98,6 +104,7 @@
     Each water protection zone has its own ordinance listing what is
     forbidden or needs approval in zones I, II and III. The ordinance for the
     zone that covers the site decides whether infiltration is allowed.
+  summary_de: "Jedes Wasserschutzgebiet hat eine eigene Verordnung, die festlegt, was in den Zonen I, II und III verboten oder genehmigungspflichtig ist. Sie entscheidet, ob am Standort versickert werden darf."
   review_status: draft
 
 - id: dwa_a_138_1_kf
@@ -111,6 +118,7 @@
     nor too fast. The working range used here is a hydraulic conductivity kf
     between 1e-6 and 1e-3 m/s.
   licence_note: "Licensed standard. Only the citation and derived threshold are stored here."
+  summary_de: "Versickerungsanlagen brauchen einen Untergrund, der Wasser weder zu langsam noch zu schnell durchlässt. Verwendeter Anwendungsbereich: kf zwischen 1·10⁻⁶ und 1·10⁻³ m/s."
   review_status: draft
 
 - id: dwa_a_138_1_gw
@@ -124,6 +132,7 @@
     before it reaches groundwater. The working value used here is at least
     1 m between the base of the facility and the mean highest groundwater level.
   licence_note: "Licensed standard. Only the citation and derived threshold are stored here."
+  summary_de: "Unter der Anlage muss ausreichend ungesättigter Boden liegen, damit das Wasser gereinigt wird, bevor es das Grundwasser erreicht. Verwendeter Wert: mindestens 1 m zwischen Anlagensohle und mittlerem höchsten Grundwasserstand."
   review_status: draft
 
 - id: dwa_a_138_1_contamination
@@ -137,6 +146,7 @@
     carry pollutants into the groundwater. A suspected contamination has to be
     investigated first.
   licence_note: "Licensed standard. Only the citation is stored here."
+  summary_de: "Durch belasteten Untergrund darf nicht versickert werden, weil Schadstoffe ins Grundwasser gelangen können. Ein Verdacht ist vorab zu untersuchen."
   review_status: draft
 
 - id: k3_slope_assumption
@@ -148,6 +158,7 @@
     Swales work best on flat ground. Up to 5 % slope is treated as suitable,
     5 to 10 % as possible with terracing, above 10 % as unsuitable. This is a
     project assumption that the expert panel must confirm or replace.
+  summary_de: "Arbeitsannahme des Projekts zur Geländeneigung von Mulden (bis 5 % geeignet, 5 bis 10 % mit Terrassierung, über 10 % ungeeignet); vom Expertengremium zu bestätigen."
   review_status: draft
 
 - id: k3_area_assumption
@@ -159,4 +170,32 @@
     As a first screening value, the swale needs free area of about 10 % of
     the connected sealed area. Final sizing follows the DWA-A 138-1
     calculation with local rainfall data.
+  summary_de: "Arbeitsannahme des Projekts: Mulde mit etwa 10 % der angeschlossenen versiegelten Fläche als erster Schätzwert; die Bemessung folgt DWA-A 138-1."
   review_status: draft
+
+- id: dwa_a_138_1_distance
+  kind: technical_standard
+  jurisdiction: DE
+  citation: "DWA-A 138-1 (2024), Abstände zu Gebäuden"
+  title: "DWA-A 138-1 Anlagen zur Versickerung von Niederschlagswasser - Teil 1"
+  source_uri: "https://webshop.dwa.de/"
+  summary: >-
+    Infiltration systems must keep enough distance from buildings so that
+    seepage water does not reach basements that are not waterproofed. The
+    working rule used here (1.5 times the basement depth) is a derived value
+    that must be confirmed against the current edition.
+  licence_note: "Licensed standard. Only the citation and derived threshold are stored here."
+  summary_de: "Versickerungsanlagen müssen Abstand zu Gebäuden halten, damit Sickerwasser keine nicht abgedichteten Keller erreicht. Die verwendete Regel (1,5-fache Kellertiefe) ist abgeleitet und am geltenden Wortlaut zu bestätigen."
+  review_status: draft
+
+- id: k3_convention_unit
+  kind: guidance
+  jurisdiction: DE
+  citation: "K3 Logik-Konventionen, Bewertungseinheit"
+  title: "Evaluation unit for seepage systems"
+  summary: >-
+    For DWA-A 138-1 the evaluation unit is the planned system location on
+    unbuilt land together with its catchment. Roofs count only as catchment,
+    never as a location.
+  summary_de: "Bewertungseinheit für DWA-A 138-1 ist der geplante Anlagenstandort auf unbebauter Fläche mit seinem Einzugsgebiet. Dächer zählen nur als Einzugsgebiet, nie als Standort."
+  review_status: expert_reviewed

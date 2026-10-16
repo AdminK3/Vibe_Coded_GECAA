@@ -40,6 +40,42 @@ demo-c     not feasible                  52%  (open)
            decisive: Distance to groundwater - Check groundwater levels with the lower water authority or a monitoring well near the site.
 ```
 
+## Version 2 (start page)
+
+Version 2 follows the K3 logic conventions and works anywhere in North Rhine-Westphalia
+with live open data. The interface and the report are in German.
+
+- **Find the place** by address, pick the parcel (ALKIS).
+- **Draw each planned trough (Mulde) on unbuilt land** and click the roofs that drain
+  into it. The unit of assessment is the location plus its catchment; roofs are only
+  ever catchment.
+- **GECAA fetches the inputs** for each location and states the source and the data
+  quality (hoch / mittel / Annahme offen) of every value:
+
+| Input | Source (live) | Licence |
+|---|---|---|
+| Parcel, building footprints, distance to buildings | Geobasis NRW, ALKIS vereinfacht (WFS) | dl-de/zero-2-0 |
+| Permeability kf | GD NRW, soil map BK50 (WMS feature info), cm/d converted to m/s | dl-de/by-2-0 |
+| Depth to groundwater | GD NRW, BK50 groundwater level class; shallow edge of the class is used (marked "abgeleitet") | dl-de/by-2-0 |
+| Water protection zone | LANUK, Wasserschutzgebiete (WMS feature info); planned zones stay OPEN | free, commercial use needs permission |
+| Contaminated sites, basement depth | asked from the user: there is no open statewide service | – |
+| Map overlays: aerial photo, cadastral map, infiltration suitability, heavy-rain flow velocity | Geobasis NRW, GD NRW, BKG (display only) | dl-de |
+
+- **Every check gives PASSED, OPEN or BLOCKED.** A missing input gives OPEN, never a
+  guessed value; permits and case-by-case decisions are OPEN too. The site is
+  *möglich* when all locations pass, *teilweise versickerbar* when some do, *nicht
+  möglich* when none can.
+- **Probabilities are kept as detail.** The soil map's uncertainty is shown as
+  "Datensicherheit" next to a check; it never changes the result.
+- **The Prüflogik tab** shows the logic (inputs → calculations → checks) as a graph,
+  coloured with the result of the selected location, plus every parameter with its source.
+- **The report** (sections 0–6) is German, costs are "nicht beziffert", and the next
+  steps name the office that can settle each open point.
+
+The logic lives in `blueprints/k3/dwa_a_138_1_mulden_rigolen.yaml` with K3 IDs
+(PAxx parameters, CAxx calculations, CHxx checks). It is a draft until it has been audited.
+Without internet, choose "Synthetische Demodaten" in the data menu. Version 1 stays at `/v1`.
+
 ## Try it
 
 **In GitHub Codespaces** (nothing to install): on the repository page click

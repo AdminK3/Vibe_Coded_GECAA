@@ -34,9 +34,18 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
+from .api_v2 import router as v2_router  # noqa: E402
+
+app.include_router(v2_router)
+
 
 @app.get("/", include_in_schema=False)
 def web_app():
+    return FileResponse(WEB_DIR / "v2.html")
+
+
+@app.get("/v1", include_in_schema=False)
+def web_app_v1():
     return FileResponse(WEB_DIR / "index.html")
 
 

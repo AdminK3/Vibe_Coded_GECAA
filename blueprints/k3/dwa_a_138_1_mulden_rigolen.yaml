@@ -1,0 +1,170 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# K3 logic (code form) - DWA-A 138-1, swale-trench element (Mulden-Rigolen-Element)
+#
+# STATUS: draft. Written by the project team from the structure of the K3
+# logic workbooks. It has NOT gone through quote verification, reference
+# tests and independent audit (k3-logic-derivation phases E-H). Once the
+# audited workbook "K3_logic_DWA-A-138-1_..." exists, this file must be
+# regenerated from it and its parameters checked against the workbook.
+#
+# Conventions applied: missing input -> OPEN; PASSED only when every
+# condition of the coded rule is checked; permits and case-by-case decisions
+# -> OPEN; values not stated in the source are marked derived ("abgeleitet").
+
+id: k3_dwa_a_138_1_mre
+title: "Maßnahmenprüfung Versickerung – Mulden-Rigolen-Element"
+measure: "Mulden-Rigolen-Element"
+guideline: "DWA-A 138-1 (2024)"
+evaluation_unit: "Anlagenstandort auf unbebauter Fläche mit seinem Einzugsgebiet (Dachflächen nur als Einzugsgebiet)"
+version: "0.2.0"
+review_status: draft
+
+inputs:
+  - abbr: LUB
+    label: "Standort liegt auf unbebauter Fläche"
+    kind: bool
+    level: unit
+    sources: [alkis_buildings]
+    help: "Wird aus den ALKIS-Gebäudeumringen berechnet: keine Überschneidung des Standorts mit Gebäuden."
+  - abbr: KF
+    label: "Durchlässigkeitsbeiwert kf am Standort"
+    unit: "m/s"
+    level: unit
+    sources: [measurement, bk50]
+    help: "Am besten aus einem Versickerungsversuch vor Ort; sonst aus der Bodenkarte BK50 (Datengüte mittel)."
+  - abbr: GWF
+    label: "Flurabstand zum mittleren höchsten Grundwasserstand (MHGW)"
+    unit: "m"
+    level: unit
+    sources: [measurement, bk50_gws]
+    help: "Aus Grundwassermessstellen oder Angaben der Unteren Wasserbehörde; sonst aus der Grundwasserstufe der BK50 (Datengüte mittel)."
+  - abbr: TA
+    label: "Bautiefe der Anlage unter Gelände (Sohle der Rigole)"
+    unit: "m"
+    level: unit
+    sources: [user]
+    help: "Aus der Vorplanung. Ohne Angabe bleibt die Sickerraum-Prüfung offen."
+  - abbr: ABST
+    label: "Abstand des Standorts zum nächsten Gebäude"
+    unit: "m"
+    level: unit
+    sources: [alkis_buildings]
+  - abbr: KT
+    label: "Tiefe nicht abgedichteter Keller angrenzender Gebäude (0 = kein Keller oder abgedichtet)"
+    unit: "m"
+    level: building
+    sources: [user]
+  - abbr: WSG
+    label: "Wasserschutzzone am Standort"
+    kind: choice
+    level: unit
+    sources: [wsg]
+    choices: {kein: "keine Wasserschutzzone", I: "Zone I", II: "Zone II", IIIA: "Zone IIIA", IIIB: "Zone IIIB", III: "Zone III", geplant: "geplantes Schutzgebiet (Verfahren läuft)"}
+  - abbr: ALT
+    label: "Altlasten / schädliche Bodenveränderungen am Standort"
+    kind: choice
+    level: parcel
+    sources: [user]
+    choices: {keine: "keine bekannt (Auskunft Altlastenkataster)", verdacht: "Verdacht", belastet: "belastet"}
+    help: "Auskunft aus dem Altlastenkataster der Unteren Bodenschutzbehörde."
+
+parameters:
+  - {id: PA01, abbr: KFMIN, value: 1.0e-6, unit: "m/s", label: "kleinster zulässiger kf-Wert", basis: [dwa_a_138_1_kf]}
+  - {id: PA02, abbr: KFMAX, value: 1.0e-3, unit: "m/s", label: "größter zulässiger kf-Wert", basis: [dwa_a_138_1_kf]}
+  - {id: PA03, abbr: SRMIN, value: 1.0, unit: "m", label: "Mindestmächtigkeit des Sickerraums", basis: [dwa_a_138_1_gw]}
+  - {id: PA04, abbr: ABSTF, value: 1.5, unit: "-", label: "Faktor Mindestabstand zu nicht abgedichteten Kellern (× Kellertiefe)", basis: [dwa_a_138_1_distance], derived: true}
+
+calculations:
+  - {id: CA01, label: "Sickerraum unter der Anlage (GWF − TA)", op: sub, a: GWF, b: TA, unit: "m"}
+  - {id: CA02, label: "Mindestabstand zu Gebäuden (PA04 × KT)", op: mul, a: PA04, b: KT, unit: "m", derived: true}
+
+checks:
+  - id: CH01
+    question: "Liegt der Anlagenstandort auf unbebauter Fläche?"
+    text_passed: "Der Standort überschneidet sich mit keinem Gebäude."
+    text_blocked: "Der Standort überschneidet sich mit einem Gebäude. Versickerungsanlagen werden nicht auf Dächern oder unter Gebäuden bewertet."
+    rule: is_true
+    operand: LUB
+    inputs: [LUB]
+    theme: "Standort"
+    basis: [k3_convention_unit]
+  - id: CH02
+    question: "Liegt die Durchlässigkeit kf im Anwendungsbereich (1·10⁻⁶ bis 1·10⁻³ m/s)?"
+    text_passed: "Der kf-Wert liegt im Anwendungsbereich."
+    text_blocked: "Der kf-Wert liegt außerhalb des Anwendungsbereichs für die Versickerung."
+    rule: between
+    operand: KF
+    low: PA01
+    high: PA02
+    inputs: [KF]
+    theme: "Untergrund"
+    basis: [dwa_a_138_1_kf]
+    responsible: "Bodengutachter (Versickerungsversuch)"
+  - id: CH03
+    question: "Ist der Sickerraum zwischen Anlagensohle und MHGW mindestens 1 m mächtig?"
+    text_passed: "Der Sickerraum reicht aus."
+    text_blocked: "Der Grundwasserflurabstand ist zu gering für einen ausreichenden Sickerraum."
+    rule: at_least
+    operand: CA01
+    low: PA03
+    inputs: [GWF, TA]
+    theme: "Grundwasser"
+    basis: [dwa_a_138_1_gw]
+    responsible: "Untere Wasserbehörde (Grundwasserstände), Planung (Bautiefe)"
+  - id: CH04
+    question: "Hält der Standort den Mindestabstand zu nicht abgedichteten Kellern ein?"
+    text_passed: "Der Abstand zu Gebäuden reicht aus."
+    text_blocked: "Der Standort liegt zu nah an einem Gebäude mit nicht abgedichtetem Keller."
+    rule: at_least
+    operand: ABST
+    low: CA02
+    inputs: [ABST, KT]
+    theme: "Gebäudeschutz"
+    basis: [dwa_a_138_1_distance]
+    derived: true
+    responsible: "Eigentümer / Planung (Kellerausbildung)"
+  - id: CH05
+    question: "Ist die Versickerung in Bezug auf Wasserschutzgebiete zulässig?"
+    text_passed: "Der Standort liegt in keiner Wasserschutzzone."
+    text_blocked: "Der Standort liegt in Zone I oder II; dort ist die Versickerung in der Regel verboten."
+    text_open: "Der Standort liegt in Zone III oder in einem geplanten Schutzgebiet; die Behörde entscheidet im Einzelfall."
+    rule: in_set
+    operand: WSG
+    passed_values: [kein]
+    open_values: [III, IIIA, IIIB, geplant]
+    blocked_values: [I, II]
+    inputs: [WSG]
+    theme: "Grundwasserschutz"
+    basis: [whg_52, nrw_wsg_ordinance]
+    responsible: "Untere Wasserbehörde"
+  - id: CH06
+    question: "Ist der Untergrund frei von Altlasten und schädlichen Bodenveränderungen?"
+    text_passed: "Laut Altlastenkataster ist nichts bekannt."
+    text_blocked: "Der Untergrund ist belastet; durch belastete Bereiche darf nicht versickert werden."
+    text_open: "Es besteht ein Altlastenverdacht; er muss vor der Planung untersucht werden."
+    rule: in_set
+    operand: ALT
+    passed_values: [keine]
+    open_values: [verdacht]
+    blocked_values: [belastet]
+    inputs: [ALT]
+    theme: "Bodenschutz"
+    basis: [dwa_a_138_1_contamination]
+    responsible: "Untere Bodenschutzbehörde (Altlastenkataster)"
+
+not_coded:
+  - topic: "Hydraulische Bemessung (erforderliches Mulden- und Rigolenvolumen mit KOSTRA-DWD-Regen)"
+    reason: "Bemessungsverfahren noch nicht aus der Richtlinie abgeleitet; Flächenbedarf wird daher nicht beziffert."
+    basis: [dwa_a_138_1_kf]
+  - topic: "Flächengruppen und Behandlungsbedürftigkeit des Niederschlagswassers"
+    reason: "Zuordnung der Herkunftsflächen noch nicht codiert."
+  - topic: "Abstände zu Grundstücksgrenzen, Bäumen und Leitungen"
+    reason: "Noch nicht codiert."
+  - topic: "Festsetzungen des Bebauungsplans und der Entwässerungssatzung"
+    reason: "Ortsrecht wird als Prüfauflage geführt, nicht codiert."
+  - topic: "Erlaubnisfreiheit nach § 46 Abs. 2 WHG"
+    reason: "Abhängig von Rechtsverordnungen; siehe Abschnitt Rechtliche Rahmenbedingungen."
+    basis: [whg_46_2]
+
+legal: [whg_55_2, lwg_nrw_44, whg_8, whg_9_1_4, whg_46_2, whg_52]

@@ -8,13 +8,21 @@ this repository), each under its own licence:
   pgmpy (MIT), NumPy (BSD-3-Clause), pandas (BSD-3-Clause),
   rasterio (BSD-3-Clause) with GDAL (MIT), Shapely (BSD-3-Clause),
   Pydantic (MIT), PyYAML (MIT), HTTPX (BSD-3-Clause), Jinja2 (BSD-3-Clause),
-  FastAPI (MIT), Uvicorn (BSD-3-Clause).
+  FastAPI (MIT), Uvicorn (BSD-3-Clause), pyproj (MIT) with PROJ (MIT).
 
 The web app bundles these libraries in src/gecaa/web/vendor, each with its
 licence file:
   Leaflet 1.9.4 (BSD-2-Clause), Leaflet-Geoman free 2.17.0 (MIT),
   Cytoscape.js 3.30.2 (MIT).
 Background map tiles come from basemap.de (c) BKG, licensed CC BY 4.0.
+
+Version 2 queries these open services at run time (no data is bundled):
+  Geobasis NRW: ALKIS vereinfacht WFS, DOP and ALKIS WMS (dl-de/zero-2-0);
+  Geologischer Dienst NRW: Bodenkarte BK50 WMS (dl-de/by-2-0);
+  LANUK NRW: Wasserschutzgebiete WMS (free; commercial use requires permission);
+  BKG: Starkregengefahrenhinweise WMS (dl-de/by-2-0);
+  OpenStreetMap Nominatim for address search (data (c) OpenStreetMap
+  contributors, ODbL; used within the Nominatim usage policy).
 
 Legal texts retrieved from the federal legal information system
 (rechtsinformationen.bund.de / gesetze-im-internet.de) are official works

@@ -8,3 +8,4 @@ dist/
 out/
 data/knowledge/snapshots/
 .env
+data/cache/

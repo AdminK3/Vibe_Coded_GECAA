@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GECAA · Maßnahmenprüfung</title>
+<!-- Open-source libraries, bundled locally: Leaflet (BSD-2-Clause), Leaflet-Geoman free (MIT), Cytoscape.js (MIT) -->
+<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/static/vendor/geoman/leaflet-geoman.css">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/v2.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">G</span>
+    <div><strong>GECAA</strong><span class="sub">Maßnahmenprüfung für die kommunale Klimaanpassung · v2</span></div>
+  </div>
+  <div class="badges" id="badges"></div>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="check" id="tab-check">Prüfen</button>
+      <button role="tab" aria-selected="false" data-tab="logic" id="tab-logic">Prüflogik</button>
+      <button role="tab" aria-selected="false" data-tab="sources" id="tab-sources">Quellen</button>
+    </nav>
+
+    <section class="tabpane" id="pane-check">
+      <div class="step">
+        <h2><span class="num">1</span>Ort finden</h2>
+        <div class="row">
+          <input type="search" id="search" placeholder="Adresse in NRW, z. B. Marktplatz 1, Mettmann" aria-label="Adresse suchen">
+          <button class="btn secondary" type="button" id="search-btn">Suchen</button>
+        </div>
+        <ul class="hits" id="hits" hidden></ul>
+        <div class="row" style="margin-top:8px">
+          <label class="inline" for="provider">Daten</label>
+          <select id="provider" aria-label="Datenquelle"></select>
+          <button class="btn secondary" type="button" id="parcel-btn" title="Klicken Sie danach auf ein Flurstück in der Karte">Flurstück wählen</button>
+        </div>
+        <div class="site-card" id="parcel-card" hidden></div>
+        <p class="hint" id="zoom-hint">Zoomen Sie nah heran: ab Maßstab Straße werden Gebäude und Flurstücke geladen.</p>
+      </div>
+
+      <div class="step">
+        <h2><span class="num">2</span>Anlagenstandorte einzeichnen</h2>
+        <p class="hint">Zeichnen Sie jede geplante Mulde auf unbebauter Fläche ein. Klicken Sie danach auf Dächer, die in diesen Standort entwässern (Einzugsgebiet).</p>
+        <button class="btn secondary" type="button" id="draw-btn">+ Standort einzeichnen</button>
+        <div id="units"></div>
+      </div>
+
+      <form class="step" id="site-form">
+        <h2><span class="num">3</span>Angaben zum Grundstück</h2>
+        <div id="site-inputs"></div>
+        <button class="btn primary" id="assess-btn" type="submit" disabled>Prüfen</button>
+        <p class="error" id="assess-error" hidden></p>
+      </form>
+
+      <div id="result" hidden></div>
+    </section>
+
+    <section class="tabpane" id="pane-logic" hidden>
+      <div id="logic-head"></div>
+      <div class="row" style="margin:8px 0"><label class="inline" for="graph-unit">Ergebnis zeigen für</label><select id="graph-unit"><option value="">– noch nicht geprüft –</option></select></div>
+      <div id="graph" aria-label="Prüflogik als Graph"></div>
+      <div id="node-detail" class="node-detail"></div>
+      <div id="logic-tables"></div>
+    </section>
+
+    <section class="tabpane" id="pane-sources" hidden>
+      <div class="step">
+        <h2>Bundesrecht, live</h2>
+        <p class="hint">Der Knowledge Agent holt den aktuellen Wortlaut der Bundesvorschriften aus dem Rechtsinformationssystem des Bundes (NeuRIS, Testphase), speichert ihn mit Datum und Prüfsumme und meldet Änderungen.</p>
+        <button class="btn primary" id="refresh-btn" type="button">Bundesrecht auf Änderungen prüfen</button>
+        <div id="refresh-result"></div>
+      </div>
+      <div id="data-sources"></div>
+      <div id="provisions"></div>
+    </section>
+  </aside>
+
+  <main class="mapwrap">
+    <div id="map" aria-label="Karte"></div>
+    <div class="layers" id="layers" aria-label="Kartenebenen"></div>
+  </main>
+</div>
+
+<script src="/static/vendor/leaflet/leaflet.js"></script>
+<script src="/static/vendor/geoman/leaflet-geoman.min.js"></script>
+<script src="/static/vendor/cytoscape/cytoscape.min.js"></script>
+<script src="/static/v2.js"></script>
+</body>
+</html>

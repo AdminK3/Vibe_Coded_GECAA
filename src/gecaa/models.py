@@ -41,6 +41,7 @@ class Provision(BaseModel):
     eli: str | None = None
     source_uri: str | None = None
     summary: str
+    summary_de: str | None = None
     text: str | None = None
     licence_note: str | None = None
     provenance: Provenance = Field(default_factory=Provenance)
