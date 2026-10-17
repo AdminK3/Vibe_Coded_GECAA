@@ -402,7 +402,8 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
         except Exception:
             hmap = {}
         for b in blds:
-            h = hmap.get(str(b["id"]))
+            bid = str(b["id"])                        # ALKIS-vereinfacht adds a 2-char suffix to the 16-char oid
+            h = hmap.get(bid) or hmap.get(bid[:16])
             if h and h.get("height_m"):
                 b["height_m"], b["height_method"] = h["height_m"], h.get("method")
     buildings, ring_idx = [], []
