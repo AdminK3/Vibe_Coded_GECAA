@@ -11,6 +11,8 @@ import math
 import time
 import uuid
 from collections import OrderedDict
+from dataclasses import replace as _dc_replace
+from typing import Literal
 
 import numpy as np
 from pydantic import BaseModel, Field, field_validator
@@ -21,7 +23,7 @@ from shapely.ops import unary_union
 
 from ..geodata.base import to_utm, to_wgs
 from .kostra import DURATIONS, RPS as KOSTRA_RPS
-from . import damage, engine_client, raster_png, scenario
+from . import damage, engine_client, measures as mlib, raster_png, scenario, sewer
 from .hydrology import d8_receivers, ponding, priority_flood
 
 BUFFER_M = 100.0             # extra terrain around the box so nearby water reaches the site
@@ -54,6 +56,10 @@ class MeasureIn(BaseModel):
     geometry: dict
     roof_ids: list[str] = Field(default_factory=list, max_length=200)
     depth_m: float = Field(0.3, gt=0, le=1.0)          # usable storage depth of the trough (Einstau)
+    kind: Literal["mulde", "gruendach", "entsiegelung", "baeume"] = "mulde"
+    variant: Literal["extensiv", "intensiv"] = "extensiv"   # green roof only
+    trees: int | None = Field(None, ge=1, le=2000)          # trees only: count (canopy = count × 50 m²)
+    pit_m3_per_tree: float = Field(0.0, ge=0, le=50)        # trees only: tree-pit storage per tree
 
     @field_validator("geometry")
     @classmethod
@@ -74,7 +80,12 @@ class RainRequest(BaseModel):
     duration_min: int = Field(60, description=f"KOSTRA-Dauerstufe in Minuten: {DURATIONS}")
     rps: list[int] = Field(default_factory=lambda: [10, 30, 100], min_length=1, max_length=5)
     scenarios: list[str] = Field(default_factory=lambda: ["heute", "+1 K", "+2 K"], min_length=1, max_length=3)
-    sewer_mm: float = Field(0.0, ge=0, le=50)          # rain the sewer takes away during the event (mm)
+    sewer_mm: float = Field(0.0, ge=0, le=50)          # sewer_mode "pauschal": rain the sewer takes away (mm)
+    sewer_mode: Literal["none", "pauschal", "bemessung"] | None = None   # None: bemessung if KOSTRA, else none
+    sewer_design_rp: Literal[1, 2, 3, 5, 10] = 3       # design return period of the sewer (DWA-A 118 / EN 752)
+    swmm_inp_b64: str | None = Field(None, max_length=2_800_000)   # SWMM .inp, base64, max 2 MB
+    engine: Literal["screening", "2d"] = "screening"
+    basement_share: float = Field(0.0, ge=0, le=1)     # share of footprint with a basement
     threshold_m: float = Field(0.10, ge=0, le=0.5)     # water below this height does not enter (door sills)
     rain_override_mm: dict[int, float] | None = None
     measures: list[MeasureIn] = Field(default_factory=list, max_length=20)
@@ -114,7 +125,9 @@ class RainRequest(BaseModel):
         return v
 
 
-def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_share: float) -> list[dict]:
+def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_share: float,
+                 ctx: dict | None = None) -> list[dict]:
+    ctx = ctx or {}
     a = [
         {"id": "A1", "art": "Vereinfachung", "quelle": "GECAA",
          "text": "Senken- und Fließweganalyse: Wasser füllt Geländesenken am Ende eines Blockregens (Volumenbilanz); "
@@ -131,9 +144,7 @@ def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_s
                  "höheres Wasser dringt durch Türen und Tore ein oder fließt durch Durchfahrten ab – Innenhöfe laufen "
                  f"daher nicht unbegrenzt voll. Überdachungen und sonstige Bauwerke sind kein Hindernis. "
                  f"Wassertiefe am Gebäude = größte Tiefe im {RING_M:g}-m-Streifen um den Grundriss."},
-        {"id": "A3", "art": "Vereinfachung" if req.sewer_mm == 0 else "Annahme", "quelle": "Eingabe",
-         "text": "Kanalnetz nicht berücksichtigt (ungünstiger Fall)." if req.sewer_mm == 0 else
-                 f"Kanalnetz nimmt pauschal {req.sewer_mm:g} mm des Regens auf."},
+        _sewer_assumption(req, ctx),
         {"id": "A4", "art": "Normwert" if landuse_known else "Annahme", "quelle": "DIN 1986-100, Tab. 9 (angelehnt)",
          "text": "Abflussbeiwerte: Dach 1,0 · Verkehr 0,9 · teilversiegelte Grundstücke 0,6 · Grün 0,3 · Wald 0,15"
                  + ("" if landuse_known else f" – Nutzung unbekannt, einheitlich {DEFAULT_RUNOFF:g} außerhalb von Gebäuden")},
@@ -147,15 +158,44 @@ def _assumptions(req: RainRequest, rain_source: str, landuse_known: bool, edge_s
         {"id": "A10", "art": "Annahme", "quelle": "Eingabe",
          "text": f"Schwellenhöhe {req.threshold_m * 100:g} cm: Wasser bis zu dieser Höhe dringt nicht ins Gebäude ein "
                  "(Türschwellen, Sockel); die Schadensfunktion wird auf die Tiefe darüber angewendet."},
-        {"id": "A8", "art": "Annahme", "quelle": "GECAA",
-         "text": "Maßnahme: Mulde speichert Regen der zugeordneten Dächer und der eigenen Fläche bis zu "
-                 "Fläche × Einstautiefe; Bemessung nach DWA-A 138-1 ist damit nicht ersetzt."},
+        *[mlib.ASSUMPTIONS[k] for k in mlib.KINDS if any(m.kind == k for m in req.measures)],
         {"id": "A9", "art": "Vereinfachung", "quelle": "GECAA",
          "text": f"Ausschnitt {req.box_m:g} m + {BUFFER_M:g} m Rand; Wasser von außerhalb fließt nicht zu."
                  + (f" Achtung: an {edge_share:.0%} des Randes steigt das Gelände nach außen an – "
                     "das Einzugsgebiet reicht vermutlich über den Ausschnitt hinaus." if edge_share > 0.3 else "")},
     ]
+    if req.basement_share > 0:
+        a.append({"id": "A16", "art": "Annahme", "quelle": f"Eingabe; {damage.SOURCE_JRC}",
+                  "text": f"Keller unter {req.basement_share:.0%} der Grundfläche: dort Schaden nach derselben "
+                          "JRC-Funktion bei Wassertiefe + 2,5 m (Kellergeschoss), sobald Wasser die Schwelle "
+                          "übersteigt. Erdgeschossschaden unverändert (CLIMAAX)."})
+    if ctx.get("engine_2d"):
+        e = ctx["engine_2d"]
+        a.append({"id": "A17", "art": "Vereinfachung", "quelle": f"{e.get('engine')} {e.get('version', '')}".strip(),
+                  "text": "2D-Hydraulik: Flachwassergleichungen auf dem Raster (Gelände + Gebäude als Hindernis), "
+                          "Blockregen mit Abflussbeiwert je Zelle, Manning-Rauheit wie A11; Ereignistiefe = "
+                          "größte Wassertiefe der Simulation statt Senken-/Fließweganalyse (A1)."})
+    if ctx.get("swmm"):
+        a.append({"id": "A18", "art": "Modell", "quelle": "EPA SWMM (pyswmm), Eingabe-.inp",
+                  "text": f"Überstau aus dem Kanalmodell: {ctx['swmm']['nodes']} Schächte im Raster mit zusammen "
+                          f"{ctx['swmm']['m3']:.0f} m³ als zusätzliche Oberflächenquelle in ihrer Rasterzelle. "
+                          "Koordinaten der .inp werden als EPSG:25832 (ETRS89/UTM 32N) angenommen."})
     return a
+
+
+def _sewer_assumption(req: RainRequest, ctx: dict) -> dict:
+    mode = ctx.get("sewer_mode", "none")
+    if mode == "pauschal":
+        return {"id": "A3", "art": "Annahme", "quelle": "Eingabe",
+                "text": f"Kanalnetz nimmt pauschal {req.sewer_mm:g} mm des Regens auf (alle Flächen)."}
+    if mode == "bemessung":
+        return {"id": "A3", "art": "Normwert (angelehnt)", "quelle": "DWA-A 118 / DIN EN 752; KOSTRA-DWD",
+                "text": f"Kanalnetz bemessen auf den {req.sewer_design_rp}-jährlichen Regen gleicher Dauer "
+                        f"({ctx.get('design_mm', 0):g} mm, typische Bemessungshäufigkeit für Wohngebiete): auf "
+                        "versiegelten Flächen (Abflussbeiwert ≥ 0,6) wirkt nur der Regen darüber; "
+                        "Grünflächen unverändert. Klimaszenarien ändern die Kanalkapazität nicht."}
+    return {"id": "A3", "art": "Vereinfachung", "quelle": "Eingabe",
+            "text": "Kanalnetz nicht berücksichtigt (ungünstiger Fall)."}
 
 
 def _resample(a: np.ndarray, src_res: float, res: float) -> tuple[np.ndarray, float]:
@@ -177,6 +217,8 @@ def _edge_inflow_share(dem: np.ndarray) -> float:
 
 
 def run(provider, req: RainRequest, kostra=None) -> dict:
+    if req.engine == "2d" and len(req.scenarios) * len(req.rps) > 3:
+        raise ValueError("2D-Simulation: höchstens 3 Ereignisse je Lauf (z. B. ein Klimaszenario mit 3 Jährlichkeiten)")
     if req.cost_eur and not req.measures:
         raise ValueError("Kosten angegeben, aber keine Maßnahme eingezeichnet")
     t0 = time.time()
@@ -253,37 +295,116 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
     measure_masks = []
     for m in req.measures:
         g = to_utm(m.geometry)
-        trough = rasterize([(g, 1)], out_shape=shape_rc, transform=tr, fill=0, dtype="uint8") == 1
+        area = rasterize([(g, 1)], out_shape=shape_rc, transform=tr, fill=0, dtype="uint8") == 1
         roofs = [bld_by_id[r]["geometry"] for r in m.roof_ids if r in bld_by_id]
         roof = (rasterize(((r, 1) for r in roofs), out_shape=shape_rc, transform=tr, fill=0, dtype="uint8") == 1
                 if roofs else np.zeros(shape_rc, bool))
-        measure_masks.append((m, trough | roof, g.area * m.depth_m))
+        if m.kind == "gruendach":
+            mask = roof if roofs else area & bld_mask
+        elif m.kind == "mulde":
+            mask = area | roof
+        else:
+            mask = area
+        measure_masks.append((m, mask, mlib.storage_m3(m.kind, g.area, m.depth_m, m.trees, m.pit_m3_per_tree)))
 
-    def coeff_with_measures(rain_mm: float) -> np.ndarray:
+    # sewer capacity
+    sewer_mode = req.sewer_mode or ("bemessung" if kostra_info is not None else "none")
+    design_mm = 0.0
+    if sewer_mode == "bemessung":
+        if req.sewer_design_rp not in rain:
+            raise ValueError(f"Keine Regenhöhe für das Bemessungsintervall T={req.sewer_design_rp} a")
+        design_mm = float(rain[req.sewer_design_rp])
+    sewer_ctx = {"sewer_mode": sewer_mode, "design_mm": round(design_mm, 1)}
+
+    # optional SWMM node flooding as extra surface sources (coordinates assumed EPSG:25832)
+    extra_m3 = np.zeros(shape_rc)
+    if req.swmm_inp_b64:
+        import os as _os
+        path = sewer.decode_inp(req.swmm_inp_b64)
+        try:
+            nodes = sewer.swmm_node_flooding(path, [(0.0, rain[req.rps[-1]] / (req.duration_min / 60.0)),
+                                                    (req.duration_min * 60.0, 0.0)])
+        except ImportError as exc:
+            raise ValueError("SWMM-Datei angegeben, aber pyswmm ist nicht installiert (Extra 'sewer')") from exc
+        finally:
+            _os.unlink(path)
+        n_in = 0
+        for n in nodes:
+            c_, r_ = int((n["x"] - x_left) // res), int((y_top - n["y"]) // res)
+            if 0 <= r_ < shape_rc[0] and 0 <= c_ < shape_rc[1] and n["flood_m3"] > 0:
+                extra_m3[r_, c_] += n["flood_m3"]
+                n_in += 1
+        sewer_ctx["swmm"] = {"nodes": n_in, "m3": float(extra_m3.sum())}
+
+    def with_sources(c: np.ndarray, mm: float) -> np.ndarray:
+        if not extra_m3.any() or mm <= 0:
+            return c
+        return c + extra_m3 / ((mm / 1000.0) * res * res)
+
+    def coeff_with_measures(rain_mm: float) -> tuple[np.ndarray, list[float]]:
         c = coeff.copy()
-        for _m, mask, storage in measure_masks:
-            vol = float((rain_mm / 1000.0) * c[mask].sum() * res * res)
-            keep = 0.0 if vol <= storage or vol == 0 else 1 - storage / vol
-            c[mask] = c[mask] * keep
-        return c
+        retained = []
+        for m, mask, storage in measure_masks:
+            before = float(c[mask].sum())
+            mlib.apply_static(m.kind, m.variant, c, mask)
+            if storage > 0:
+                vol = float((rain_mm / 1000.0) * c[mask].sum() * res * res)
+                keep = 0.0 if vol <= storage or vol == 0 else 1 - storage / vol
+                c[mask] = c[mask] * keep
+            retained.append((before - float(c[mask].sum())) * rain_mm / 1000.0 * res * res)
+        return c, retained
 
-    events = {}
+    engine_2d = None
+    if req.engine == "2d":
+        try:
+            from . import hydraulics_client
+        except ImportError as exc:
+            raise ValueError("2D-Hydraulik nicht verfügbar (hydraulics_client fehlt)") from exc
+
+    def surface(mm_eff, c, dur):
+        nonlocal engine_2d
+        r = ponding(model, res, mm_eff, c, filled=filled, recv=recv, duration_s=dur, manning_n=manning)
+        if req.engine == "2d":
+            intensity = mm_eff / (dur / 3600.0) if dur else 0.0
+            out = hydraulics_client.simulate(model, res, [intensity], c, manning, bld_mask, engine="auto",
+                                             duration_s=dur, drain_s=1800.0)
+            engine_2d = {"engine": out.get("engine"), "version": out.get("version")}
+            r = _dc_replace(r, depth=np.asarray(out["depth_max"], dtype=float))
+        return r
+
+    events, retained_by_ev = {}, {}
     for sc in req.scenarios:
         f = scenario.factor(scenario.SCENARIOS[sc])
         for rp in req.rps:
-            mm = max(0.0, rain[rp] * f - req.sewer_mm)
+            gross = rain[rp] * f
+            mm = max(0.0, gross - req.sewer_mm) if sewer_mode == "pauschal" else gross
+            c_base = sewer.effective_coeff(coeff, mm, design_mm) if sewer_mode == "bemessung" else coeff
+            eff = (max(0.0, mm - design_mm) if sewer_mode == "bemessung" else mm)
             dur = req.duration_min * 60.0
-            res_base = ponding(model, res, mm, coeff, filled=filled, recv=recv, duration_s=dur, manning_n=manning)
-            ev = {"scenario": sc, "rp": rp, "rain_mm": round(rain[rp] * f, 1), "effective_mm": round(mm, 1),
+            res_base = surface(mm, with_sources(c_base, mm), dur)
+            ev = {"scenario": sc, "rp": rp, "rain_mm": round(gross, 1), "effective_mm": round(eff, 1),
                   "base": res_base}
             if measure_masks:
-                ev["measure"] = ponding(model, res, mm, coeff_with_measures(mm), filled=filled, recv=recv,
-                                        duration_s=dur, manning_n=manning)
+                c_m, ret = coeff_with_measures(mm)
+                if sewer_mode == "bemessung":
+                    c_m = sewer.effective_coeff(c_m, mm, design_mm)
+                ev["measure"] = surface(mm, with_sources(c_m, mm), dur)
+                retained_by_ev[(sc, rp)] = ret
             events[(sc, rp)] = ev
+    sewer_ctx["engine_2d"] = engine_2d
     step("Überflutung je Ereignis")
 
     # 5 exposure: buildings inside the box, depth in a ring around each footprint
     curves = damage.load_curves()
+    if hasattr(provider, "building_heights"):         # LoD2 heights (or ALKIS storeys x 3 m, marked)
+        try:
+            hmap = provider.building_heights(bbox) or {}
+        except Exception:
+            hmap = {}
+        for b in blds:
+            h = hmap.get(str(b["id"]))
+            if h and h.get("height_m"):
+                b["height_m"], b["height_method"] = h["height_m"], h.get("method")
     buildings, ring_idx = [], []
     for b in blds:
         g = b["geometry"]
@@ -302,6 +423,11 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
                                          x=c.x, y=c.y, value_eur=damage.building_value(cls, g.area),
                                          geometry=to_wgs(g)))
         buildings[-1].lonlat = (lon, lat)
+        h, st = b.get("height_m"), b.get("storeys")
+        if st is None and h:
+            st = max(1, round(float(h) / 3.0))
+        buildings[-1].storeys = int(st) if st else None
+        buildings[-1].height_m = float(h) if h else None
         ring_idx.append(idx)
     step("Gebäude als Exposition")
 
@@ -323,9 +449,15 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
                    "measure_depth": damage_rows(depth_rows(sc, "measure")) if measure_masks else None,
                    "cost_eur": req.cost_eur, "years": 30, "discount_rate": 0.02}
         impacts[sc] = engine_client.impact(payload, curves, buildings, prefer_worker=req.prefer_worker)
+        if sc == req.scenarios[0]:
+            base_payload = payload
         impacts[sc]["depth"] = depth_rows(sc, "base")
         impacts[sc]["measure_depth"] = depth_rows(sc, "measure") if measure_masks else None
+        if req.basement_share > 0:
+            _add_basement(impacts[sc], buildings, curves, req, payload)
     step("Schadensberechnung")
+
+    persons = _persons(provider, bbox, buildings)
 
     # 7 layers (PNG) and result
     # map overlays: warp from UTM to Web Mercator so they line up exactly with the Leaflet map
@@ -339,6 +471,11 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
             layers[f"depth|{key}|measure"] = raster_png.depth_png(warp(ev["measure"].depth))
     top = events[(req.scenarios[0], req.rps[-1])]["base"]
     layers["flow"] = raster_png.flow_png(warp(top.flow_acc_m3))
+    for (sc, rp), ev in events.items():               # raw grids for GeoTIFF export (QGIS)
+        for variant in ("base", "measure"):
+            if variant in ev:
+                layers[f"grid|{sc}|{rp}|{variant}"] = {"array": ev[variant].depth.astype("float32"), "transform": tr}
+    layers["payload"] = base_payload                  # for the uncertainty analysis of this run
     _RUNS[run_id] = layers
     while len(_RUNS) > MAX_RUNS:
         _RUNS.popitem(last=False)
@@ -353,6 +490,7 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
                     for sc in req.scenarios} if measure_masks else None)
         b_out.append({"id": b.id, "label": b.label, "cls": b.cls, "cls_de": damage.CLASS_DE[b.cls],
                       "footprint_m2": b.footprint_m2, "value_eur": round(b.value_eur, -2),
+                      "storeys": b.storeys, "height_m": b.height_m, "persons_est": persons.get(b.id),
                       "depth": by_sc[base_sc], "depth_measure": by_sc_m[base_sc] if by_sc_m else None,
                       "depth_by_scenario": by_sc, "depth_measure_by_scenario": by_sc_m,
                       "eai_eur": round(imp["eai"].get(b.id, 0.0), 0),
@@ -407,14 +545,87 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
         "rps": req.rps, "scenarios": req.scenarios, "events": ev_out, "threshold_m": req.threshold_m,
         "impact": {sc: {k: v for k, v in impacts[sc].items() if k not in ("depth", "measure_depth", "eai")}
                    for sc in req.scenarios},
-        "buildings": b_out, "measures": [{"id": m.id, "name": m.name, "storage_m3": round(s, 1),
-                                         "roofs": len(m.roof_ids)} for m, _mask, s in measure_masks],
+        "buildings": b_out, "measures": [
+            {"id": m.id, "name": m.name, "kind": m.kind, "variant": m.variant if m.kind == "gruendach" else None,
+             "storage_m3": round(s, 1), "roofs": len(m.roof_ids),
+             "retained_m3": round(retained_by_ev[(base_sc, req.rps[-1])][i], 1),
+             "retained_m3_by_rp": {str(rp): round(retained_by_ev[(base_sc, rp)][i], 1) for rp in req.rps},
+             "heat_note": mlib.HEAT_NOTES[m.kind]} for i, (m, _mask, s) in enumerate(measure_masks)],
+        "sewer": {"mode": sewer_mode, "design_rp": req.sewer_design_rp if sewer_mode == "bemessung" else None,
+                  "design_mm": sewer_ctx["design_mm"] if sewer_mode == "bemessung" else None,
+                  "swmm": sewer_ctx.get("swmm")},
+        "hydraulic_engine": engine_2d or {"engine": "screening", "version": "GECAA"},
+        "basement_share": req.basement_share,
         "rp_shift": shift, "bkg_comparison": comparison, "assumptions": _assumptions(
-            req, rain_source, bool(landuse), edge_share),
+            req, rain_source, bool(landuse), edge_share, sewer_ctx),
         "legend": raster_png.DEPTH_LEGEND, "steps": steps, "seconds": round(time.time() - t0, 2),
         "layers": sorted(layers),
     }
 
 
+BASEMENT_EXTRA_M = 2.5
+
+
+def _basement_eai(curves, buildings, rows, req) -> tuple[dict, list[float]]:
+    freq = damage.band_frequencies(req.rps)          # req.rps is sorted
+    eai, per_ev = {}, [0.0] * len(req.rps)
+    for b, row in zip(buildings, rows):
+        d = np.array([x + BASEMENT_EXTRA_M if x > 0 else 0.0 for x in row])
+        dmg = damage.mdr(curves, b.cls, d) * (d > 0) * b.value_eur * req.basement_share
+        eai[b.id] = float((dmg * freq).sum())
+        per_ev = [p + float(v) for p, v in zip(per_ev, dmg)]
+    return eai, per_ev
+
+
+def _add_basement(imp: dict, buildings, curves, req, payload) -> None:
+    """Basement damage: same JRC curve at depth + 2.5 m for basement_share of the footprint (assumption A16)."""
+    eai, per_ev = _basement_eai(curves, buildings, payload["depth"], req)
+    imp["eai"] = {k: v + eai.get(k, 0.0) for k, v in imp["eai"].items()}
+    imp["basement_aai"] = sum(eai.values())
+    imp["aai_agg"] = imp["aai_agg"] + imp["basement_aai"]
+    for fc in imp.get("freq_curve", []):
+        if fc["rp"] in req.rps:
+            fc["eur"] += per_ev[req.rps.index(fc["rp"])]
+    if imp.get("measure") and payload.get("measure_depth") is not None:
+        m_eai, _ = _basement_eai(curves, buildings, payload["measure_depth"], req)
+        ms = imp["measure"]
+        ms["aai_agg"] += sum(m_eai.values())
+        old = ms.get("benefit_annual") or 0.0
+        ms["benefit_annual"] = imp["aai_agg"] - ms["aai_agg"]
+        if old and ms.get("benefit_npv") is not None:
+            ms["benefit_npv"] *= ms["benefit_annual"] / old
+            if ms.get("bcr") is not None:
+                ms["bcr"] *= ms["benefit_annual"] / old
+
+
 def layer(run_id: str, name: str) -> bytes | None:
-    return _RUNS.get(run_id, {}).get(name)
+    v = _RUNS.get(run_id, {}).get(name)
+    return v if isinstance(v, bytes) else None
+
+
+def _persons(provider, bbox, buildings) -> dict:
+    """Zensus 2022 residents per 100 m cell, shared out to residential buildings in the cell by floor area."""
+    try:
+        from .population import population
+        cells = population(provider, bbox)
+    except Exception:
+        cells = None
+    if not cells:
+        return {}
+    by_cell: dict = {}
+    for b in buildings:
+        if b.cls != "residential":
+            continue
+        key = (int(b.x // 100) * 100, int(b.y // 100) * 100)
+        by_cell.setdefault(key, []).append(b)
+    out = {}
+    for c in cells:
+        key = (int(c["x"] // 100) * 100, int(c["y"] // 100) * 100)
+        bl = by_cell.get(key)
+        if not bl or not c.get("residents"):
+            continue
+        floor = [b.footprint_m2 * (b.storeys or 1) for b in bl]
+        tot = sum(floor) or 1.0
+        for b, f in zip(bl, floor):
+            out[b.id] = round(c["residents"] * f / tot, 1)
+    return out

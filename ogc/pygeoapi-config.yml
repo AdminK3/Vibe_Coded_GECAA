@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+# pygeoapi (MIT) configuration: OGC API - Processes for GECAA.
+# Standalone:  see docs/ogc.md  (pygeoapi serve).  Mounted in FastAPI under /ogc when pygeoapi is installed.
+server:
+  bind: {host: 0.0.0.0, port: 5000}
+  url: ${GECAA_OGC_URL:-http://localhost:8000/ogc}
+  mimetype: application/json; charset=UTF-8
+  encoding: utf-8
+  languages: [de-DE, en-US]
+  pretty_print: true
+  limits: {default_items: 20, max_items: 100}
+  map:
+    url: https://tile.openstreetmap.org/{z}/{x}/{y}.png
+    attribution: '&copy; OpenStreetMap contributors'
+  manager:
+    name: TinyDB
+    connection: ${GECAA_OGC_JOBS:-/tmp/gecaa-ogc-jobs.tinydb}
+    output_dir: /tmp/
+logging:
+  level: ERROR
+metadata:
+  identification:
+    title: {de: GECAA – OGC API Processes, en: GECAA – OGC API Processes}
+    description: {de: "Starkregen- und Hitzeanalyse als OGC-Prozesse. Entscheidungshilfe, kein Gutachten.", en: "Heavy rain and heat assessment as OGC processes."}
+    keywords: {de: [Klimaanpassung, Starkregen, Hitze], en: [climate adaptation]}
+    keywords_type: theme
+    terms_of_service: https://www.apache.org/licenses/LICENSE-2.0
+    url: https://www.khoch3klimakarten.de
+  license: {name: Apache-2.0, url: https://www.apache.org/licenses/LICENSE-2.0}
+  provider: {name: Khoch3 KlimaKarten UG (haftungsbeschränkt), url: https://www.khoch3klimakarten.de}
+  contact:
+    name: GECAA
+    position: Betrieb
+    address: '-'
+    city: '-'
+    stateorprovince: NRW
+    postalcode: '-'
+    country: Deutschland
+    email: info@khoch3klimakarten.de
+    url: https://www.khoch3klimakarten.de
+    role: pointOfContact
+resources:
+  gecaa-starkregen:
+    type: process
+    processor: {name: gecaa.ogc.processes.StarkregenProcessor}
+  gecaa-hitze:
+    type: process
+    processor: {name: gecaa.ogc.processes.HitzeProcessor}

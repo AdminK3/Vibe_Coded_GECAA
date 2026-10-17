@@ -92,6 +92,7 @@ function initMap() {
   map.pm.setGlobalOptions({ snappable: true, allowSelfIntersection: false });
   map.on("pm:create", (ev) => {
     $("#draw-btn").classList.remove("active");
+    if (window.onDrawCreate && window.onDrawCreate(ev.layer)) return;   // other drawing modes (risk4.js)
     addUnit(ev.layer);
   });
   map.on("moveend", () => loadBuildings());

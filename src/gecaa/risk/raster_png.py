@@ -87,3 +87,18 @@ def flow_png(acc_m3: np.ndarray, threshold_m3: float = 5.0) -> bytes:
         rgba[m, 2] = 255
         rgba[m, 3] = (110 + 140 * v).astype(np.uint8)
     return _png(rgba)
+
+
+LST_COLOURS = [(20, "#2c7bb6"), (25, "#abd9e9"), (30, "#ffffbf"), (35, "#fdae61"), (40, "#f46d43"), (45, "#d73027"),
+               (50, "#a50026")]
+
+
+def lst_png(lst_c: np.ndarray) -> bytes:
+    """Land surface temperature (°C) -> colour classes (below 20 °C transparent)."""
+    rgba = np.zeros(lst_c.shape + (4,), np.uint8)
+    edges = [c[0] for c in LST_COLOURS] + [np.inf]
+    for (lo, col), hi in zip(LST_COLOURS, edges[1:]):
+        m = (lst_c >= lo) & (lst_c < hi)
+        rgba[m, :3] = [int(col[i:i + 2], 16) for i in (1, 3, 5)]
+        rgba[m, 3] = 170
+    return _png(rgba)

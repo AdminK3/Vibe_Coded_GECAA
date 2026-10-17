@@ -39,3 +39,18 @@ def run_impact(req: ImpactRequest):
         return impact.compute(req.model_dump())
     except Exception as exc:  # report CLIMADA errors as 500 with a message
         raise HTTPException(500, f"CLIMADA: {type(exc).__name__}: {exc}") from exc
+
+
+class UncertaintyRequest(ImpactRequest):
+    n: int = Field(256, ge=16, le=2048)
+
+
+@app.post("/uncertainty")
+def run_uncertainty(req: UncertaintyRequest):
+    if len(req.depth) != len(req.exposures):
+        raise HTTPException(422, "depth needs one row per exposure")
+    try:
+        p = req.model_dump()
+        return impact.uncertainty(p, n=p.pop("n"))
+    except Exception as exc:
+        raise HTTPException(500, f"CLIMADA unsequa: {type(exc).__name__}: {exc}") from exc

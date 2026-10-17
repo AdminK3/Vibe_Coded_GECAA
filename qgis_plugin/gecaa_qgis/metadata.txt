@@ -1,0 +1,16 @@
+[general]
+name=GECAA Starkregen
+qgisMinimumVersion=3.22
+description=Starkregen-Analyse von GECAA für die Kartenmitte: Wassertiefe als Rasterebene, betroffene Gebäude als Vektorebene.
+about=Ruft einen GECAA-Server (GECAA_URL, Standard http://localhost:8000) auf: POST /v3/risk/rain, lädt die Wassertiefe als GeoTIFF (GET /v3/risk/{run_id}/geotiff) oder ersatzweise als PNG mit World-File, und die Gebäude als GeoJSON. Entscheidungshilfe, kein Gutachten.
+version=0.1.0
+author=Khoch3 KlimaKarten UG (haftungsbeschränkt)
+email=info@khoch3klimakarten.de
+license=GPL-2.0-or-later
+repository=https://github.com/
+tracker=https://github.com/
+homepage=https://www.khoch3klimakarten.de
+category=Raster
+tags=starkregen,klimaanpassung,hochwasser,gecaa
+experimental=True
+deprecated=False

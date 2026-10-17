@@ -41,6 +41,19 @@ from .api_v3 import router as v3_router  # noqa: E402
 
 app.include_router(v3_router)
 
+try:  # OGC API - Processes (pygeoapi, optional extra "ogc"); disable with GECAA_OGC=0
+    import os as _os
+    if _os.environ.get("GECAA_OGC", "1") != "0":
+        from .ogc import starlette_app as _ogc_app
+        app.mount("/ogc", _ogc_app(), name="ogc")
+except ImportError:
+    pass
+
+
+@app.get("/3d", include_in_schema=False)
+def view_3d():
+    return FileResponse(WEB_DIR / "3d.html")
+
 
 @app.get("/", include_in_schema=False)
 def web_app():

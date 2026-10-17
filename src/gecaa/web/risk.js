@@ -77,6 +77,8 @@ async function runRain() {
   const body = { lon: c.lon, lat: c.lat, box_m: box, duration_min: Number($("#rain-duration").value),
     threshold_m: (Number($("#rain-threshold").value) || 0) / 100, sewer_mm: Number($("#rain-sewer").value) || 0,
     measures, cost_eur: measures.length ? cost : null };
+  if (window.extendRainBody) window.extendRainBody(body);
+  body.cost_eur = body.measures.length ? cost : null;
   const btn = $("#rain-run");
   btn.disabled = true;
   $("#rain-error").hidden = true;
@@ -90,7 +92,7 @@ async function runRain() {
     if (i < items.length - 2) { items[i].classList.replace("active", "done"); items[++i].classList.add("active"); }
   }, st.provider.id === "synthetic" ? 150 : 1400);
   try {
-    const res = await api(`/v3/risk/rain?provider=${st.provider.id}`, { method: "POST", body: JSON.stringify(body) });
+    const res = await api(`/v3/risk/rain3d?provider=${st.provider.id}`, { method: "POST", body: JSON.stringify(body) });
     clearInterval(timer);
     items.forEach((li, k) => {
       li.classList.remove("active"); li.classList.add("done");
@@ -136,7 +138,7 @@ function renderRain() {
     Erwarteter Schaden: <strong>mindestens ${fmtEUR(imp.aai_agg)} pro Jahr</strong> (Größenordnung, Untergrenze).`;
   if (fut) head += ` Mit +2 K: ${fmtEUR(fut.aai_agg)} pro Jahr.`;
   const kept = ev.measure ? ev.base.runoff_m3 - ev.measure.runoff_m3 : 0;
-  if (m) head += ` Die Mulden halten dabei <strong>${fmt1(kept)} m³</strong> zurück (${ev.base.runoff_m3 ? fmt1((kept / ev.base.runoff_m3) * 100) : 0} % des Abflusses im Gebiet);
+  if (m) head += ` Die Maßnahmen halten dabei <strong>${fmt1(kept)} m³</strong> zurück (${ev.base.runoff_m3 ? fmt1((kept / ev.base.runoff_m3) * 100) : 0} % des Abflusses im Gebiet);
     der erwartete Schaden sinkt um <strong>${imp.aai_agg > 0 ? Math.round((m.benefit_annual / imp.aai_agg) * 100) : 0} %</strong>.`;
   const shift = (r.rp_shift || []).find((s) => s.warming_k === 2) || (r.rp_shift || [])[0];
   const kpi = (v, l, d, cls) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div>${d ? `<div class="d ${cls || ""}">${d}</div>` : ""}</div>`;
@@ -193,6 +195,7 @@ function renderRain() {
   $("#rain-result").querySelectorAll("tr[data-b]").forEach((tr) => tr.addEventListener("click", () => focusBuilding(tr.dataset.b)));
   $("#rain-to-cra").onclick = () => switchTab("cra");
   $("#rain-json").onclick = () => download("gecaa-starkregen.json", JSON.stringify(R.rain, null, 2), "application/json");
+  if (window.afterRain) window.afterRain();
 }
 
 function layerUrl(name) {

@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GECAA 3D-Ansicht</title>
+<link rel="stylesheet" href="/static/vendor/maplibre/maplibre-gl.css">
+<style>
+  html, body { margin: 0; height: 100%; font: 14px/1.4 system-ui, sans-serif; background: #f4f4f2; color: #222; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; top: 10px; left: 10px; z-index: 2; background: #fff; border-radius: 8px;
+           box-shadow: 0 1px 6px rgba(0,0,0,.25); padding: 10px 12px; max-width: 300px; }
+  .panel h1 { font-size: 15px; margin: 0 0 6px; }
+  .panel label { display: block; margin: 4px 0; }
+  .panel input[type=text] { width: 100%; box-sizing: border-box; }
+  .legend i { display: inline-block; width: 14px; height: 10px; margin-right: 6px; vertical-align: middle; }
+  .muted { color: #666; font-size: 12px; }
+  #status { margin-top: 6px; }
+  button { cursor: pointer; }
+  @media (max-width: 600px) { .panel { left: 8px; right: 8px; max-width: none; } }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="panel">
+  <h1>Starkregen in 3D</h1>
+  <label>Lauf-ID <input type="text" id="run" placeholder="aus /v3/risk/rain3d"></label>
+  <button id="load">Laden</button>
+  <button id="new" title="Neue Analyse in der Kartenmitte (POST /v3/risk/rain3d)">Neu berechnen (Kartenmitte)</button>
+  <label>Ebene <select id="layer"></select></label>
+  <label><input type="checkbox" id="showdepth" checked> Wassertiefe anzeigen</label>
+  <label>Neigung <input type="range" id="pitch" min="0" max="85" value="60"></label>
+  <label>Drehung <input type="range" id="bearing" min="-180" max="180" value="-20"></label>
+  <div class="legend" id="legend"></div>
+  <div id="status" class="muted"></div>
+  <div class="muted">Gebäudehöhe: Höhe aus Daten, sonst Geschosse × 3 m, sonst 6 m. Entscheidungshilfe, kein Gutachten.
+    Karte: © basemap.de / BKG</div>
+</div>
+<script src="/static/vendor/maplibre/maplibre-gl.js"></script>
+<script src="/static/3d.js"></script>
+</body>
+</html>

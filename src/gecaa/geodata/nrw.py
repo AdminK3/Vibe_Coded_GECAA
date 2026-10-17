@@ -443,3 +443,93 @@ class NRWProvider:
             v = next((f["properties"].get("Tiefe") for f in feats if "Tiefe" in f.get("properties", {})), None)
             out[key] = None if v is None else (0.0 if v <= -9000 else round(float(v) / 100.0, 2))
         return out
+
+    # ------------------------------------------------------------- v4: LoD2 heights, development plans
+
+    LOD2_API = "https://ogc-api.nrw.de/3dg/v1/collections/building/items"
+    BPLAN_API = "https://ogc-api.nrw.de/inspire-lu-bplan/v1/collections/spatialplan/items"
+
+    @staticmethod
+    def _bbox_crs84(bbox_utm) -> str:
+        from pyproj import Transformer
+        t = Transformer.from_crs("EPSG:25832", "EPSG:4326", always_xy=True)
+        x0, y0, x1, y1 = bbox_utm
+        (a, b), (c, d) = t.transform(x0, y0), t.transform(x1, y1)
+        return f"{a:.6f},{b:.6f},{c:.6f},{d:.6f}"
+
+    @staticmethod
+    def parse_lod2_cityjson(doc: dict) -> dict[str, float]:
+        """CityJSON (1.1) -> {ALKIS oid: max measuredHeight (m)} over Building and its BuildingParts.
+
+        Verified on a live sample (Münster, 2026-10): BuildingPart attributes carry `measuredHeight`;
+        the parent Building carries the ALKIS id ("DENW..AL...") as `name`. No storey attribute."""
+        objs = doc.get("CityObjects", {}) or {}
+        out: dict[str, float] = {}
+        for oid, o in objs.items():
+            if o.get("type") != "Building":
+                continue
+            attrs = o.get("attributes", {}) or {}
+            key = o.get("name") or attrs.get("name") or oid
+            hs = [attrs.get("measuredHeight")]
+            for cid in o.get("children", []) or []:
+                hs.append((objs.get(cid, {}).get("attributes") or {}).get("measuredHeight"))
+            hs = [float(h) for h in hs if isinstance(h, (int, float)) and h > 0]
+            if hs:
+                out[str(key)] = round(max(hs), 2)
+        return out
+
+    def building_heights(self, bbox_utm, alkis_fallback: bool = True) -> dict[str, dict]:
+        """Building heights in a UTM32 box: {ALKIS oid: {'height_m', 'method'}}.
+
+        Source: OGC API Features "3D-Gebäudemodell NW (LoD2)", Geobasis NRW, dl-de/zero-2-0,
+        https://ogc-api.nrw.de/3dg/v1 (collection `building`, f=cityjson). VERIFIED (collections and one
+        item fetched via WebFetch, 2026-10). Matching by ALKIS oid (Building `name`) - assumed to equal the
+        ALKIS vereinfacht `oid`; NOT verified live (check with scripts/probe_v4.py).
+        Fallback for buildings without LoD2: ALKIS anzahlgs x 3 m, method "abgeleitet".
+        Offline: LoD2 errors are swallowed; with no data at all an empty dict is returned (no invented values)."""
+        out: dict[str, dict] = {}
+        try:
+            text = self._get(self.LOD2_API, {"f": "cityjson", "bbox": self._bbox_crs84(bbox_utm), "limit": "2000"})
+            for k, h in self.parse_lod2_cityjson(json.loads(text)).items():
+                out[k] = {"height_m": h, "method": "gemessen (LoD2)"}
+        except (httpx.HTTPError, ValueError, OSError):
+            pass
+        if alkis_fallback:
+            try:
+                blds = self.buildings_utm(bbox_utm)
+            except (httpx.HTTPError, RuntimeError, ET.ParseError, OSError):
+                blds = []
+            for b in blds:
+                n = _num(b.get("storeys"))
+                if b["id"] not in out and n:
+                    out[b["id"]] = {"height_m": round(n * 3.0, 1), "method": "abgeleitet (ALKIS anzahlgs x 3 m)"}
+        return out
+
+    @staticmethod
+    def parse_spatial_plans(doc: dict) -> list[dict]:
+        """GeoJSON of INSPIRE PLU spatialplan -> plan records. Property keys are literal dotted names (verified)."""
+        out = []
+        for f in doc.get("features", []) or []:
+            p = f.get("properties", {}) or {}
+            out.append({"id": f.get("id"), "name": p.get("officialTitle"), "type": p.get("planTypeName.title"),
+                        "status": p.get("processStepGeneral.title"), "valid_from": p.get("validFrom"),
+                        "municipality": p.get("kommune"), "number": (p.get("nr") or "").strip("_") or None,
+                        "url": p.get("officialDocument"), "geometry": f.get("geometry")})
+        return out
+
+    def development_plans(self, bbox_utm) -> list[dict] | None:
+        """Bebauungs-/Flächennutzungspläne intersecting a UTM32 box (geometry stays EPSG:25832 GeoJSON).
+
+        Source: OGC API Features "Räumliche Pläne nach BauGB" (INSPIRE PLU, IT.NRW / MHKBD), dl-de/by-2-0,
+        https://ogc-api.nrw.de/inspire-lu-bplan/v1 (collection `spatialplan`, GeoJSON). VERIFIED via WebFetch
+        2026-10 (Münster sample: officialTitle, planTypeName.title, processStepGeneral.title, officialDocument).
+        Coverage depends on what municipalities have delivered. No WMS verified, so no MapLayer is added.
+        Returns None when the service cannot be reached."""
+        x0, y0, x1, y1 = (round(v, 2) for v in bbox_utm)
+        crs = "http://www.opengis.net/def/crs/EPSG/0/25832"
+        try:
+            text = self._get(self.BPLAN_API, {"f": "json", "bbox": f"{x0},{y0},{x1},{y1}", "bbox-crs": crs,
+                                              "crs": crs, "limit": "500"})
+            return self.parse_spatial_plans(json.loads(text))
+        except (httpx.HTTPError, ValueError, OSError):
+            return None

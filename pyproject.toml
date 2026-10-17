@@ -32,10 +32,16 @@ dependencies = [
   "pyproj>=3.6",           # MIT - coordinate transformation (ETRS89/UTM32 <-> WGS84)
   "scipy>=1.11",           # BSD-3-Clause - depression labelling, Theil-Sen trend
   "pillow>=10",            # MIT-CMU (HPND) - PNG map overlays
+  "typst>=0.13",           # Apache-2.0 - PDF report (POST /v3/report/pdf)
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+heat = ["xclim>=0.50", "xarray>=2024.1"]                       # Apache-2.0 / Apache-2.0 - heatwave indicators
+stac = ["pystac-client>=0.8", "planetary-computer>=1.0"]       # Apache-2.0 / MIT - Landsat LST via STAC
+ogc = ["pygeoapi>=0.20"]      # MIT - OGC API - Processes (mounted under /ogc)
+hydraulics = ["whitebox>=2.3", "httpx>=0.27", "rasterio>=1.3"]
+sewer = ["pyswmm>=2.0"]
 
 [project.scripts]
 gecaa = "gecaa.cli:main"

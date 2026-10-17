@@ -70,6 +70,7 @@
         <p class="error" id="assess-error" hidden></p>
       </form>
       <div id="result" hidden></div>
+      <div class="step" style="border:0"><button class="btn link" type="button" id="plans-btn">Bebauungspläne im Umfeld anzeigen</button><div id="plans"></div></div>
     </section>
 
     <!-- 2 Starkregen (CLIMADA) -->
@@ -93,9 +94,19 @@
             <div><label for="rain-threshold">Schwellenhöhe (cm)</label><input type="number" id="rain-threshold" value="10" min="0" max="50" step="1"><small>Wasser bis zu dieser Höhe dringt nicht ein (Türschwellen).</small></div>
             <div><label for="rain-sewer">Kanalnetz nimmt auf (mm)</label><input type="number" id="rain-sewer" value="0" min="0" max="50" step="1"><small>0 = ungünstiger Fall.</small></div>
             <div><label for="rain-depth">Einstautiefe der Mulden (m)</label><input type="number" id="rain-depth" value="0.3" min="0.05" max="1" step="0.05"></div>
-            <div><label for="rain-cost">Kosten der Maßnahme (€)</label><input type="number" id="rain-cost" min="0" step="1000" placeholder="optional"><small>Nur mit Ihrer Angabe wird ein Nutzen-Kosten-Verhältnis gerechnet.</small></div>
+            <div><label for="rain-cost">Kosten der Maßnahmen (€)</label><input type="number" id="rain-cost" min="0" step="1000" placeholder="optional"><small>Nur mit Ihrer Angabe wird ein Nutzen-Kosten-Verhältnis gerechnet.</small></div>
+            <div><label for="rain-engine">Rechenverfahren</label><select id="rain-engine"><option value="screening">Screening (Senken + Fließwege, Sekunden)</option><option value="2d">2D-Simulation (LISFLOOD-FP-Verfahren, ~1 min)</option></select></div>
+            <div><label for="rain-sewer-mode">Kanalnetz</label><select id="rain-sewer-mode"><option value="bemessung">bemessen auf …</option><option value="none">nicht berücksichtigt</option><option value="pauschal">pauschal (mm)</option></select></div>
+            <div><label for="rain-sewer-rp">Bemessungsregen Kanal</label><select id="rain-sewer-rp"><option value="1">1-jährlich</option><option value="2">2-jährlich</option><option value="3" selected>3-jährlich</option><option value="5">5-jährlich</option><option value="10">10-jährlich</option></select><small>Typische Bemessung nach DWA-A 118 / DIN EN 752.</small></div>
+            <div><label for="rain-basement">Anteil Gebäude mit Keller</label><input type="number" id="rain-basement" value="0" min="0" max="1" step="0.1"><small>0 bis 1; Keller erhöht den Schaden.</small></div>
+            <div><label for="rain-swmm">Kanalnetzmodell (SWMM .inp)</label><input type="file" id="rain-swmm" accept=".inp"><small>Optional, Koordinaten in EPSG:25832.</small></div>
           </div>
         </details>
+        <div class="measure-bar"><span class="lbl">Weitere Maßnahmen:</span>
+          <button class="btn secondary sm" type="button" data-measure="gruendach">+ Gründach</button>
+          <button class="btn secondary sm" type="button" data-measure="entsiegelung">+ Entsiegelung</button>
+          <button class="btn secondary sm" type="button" data-measure="baeume">+ Bäume</button></div>
+        <div id="measure-list"></div>
         <button class="btn primary" type="button" id="rain-run">Starkregen analysieren</button>
         <ol class="stepper" id="rain-steps" hidden></ol>
         <p class="error" id="rain-error" hidden></p>
@@ -111,6 +122,11 @@
           (Wärmebelastung PET am Tag, Lufttemperatur in der Nacht) – Methode und Skalen nach CLIMAAX.</p>
       </div>
       <button class="btn primary" type="button" id="heat-run">Hitze am Kartenmittelpunkt analysieren</button>
+      <div class="row" style="margin-top:8px">
+        <button class="btn secondary" type="button" id="heat-waves-btn">Hitzewellen (DWD-Station, xclim)</button>
+        <button class="btn secondary" type="button" id="heat-lst-btn">Oberflächentemperatur (Landsat)</button>
+      </div>
+      <div id="heat-extra"></div>
       <p class="error" id="heat-error" hidden></p>
       <div id="heat-result" hidden></div>
     </section>
@@ -165,5 +181,6 @@
 <script src="/static/v2.js"></script>
 <script src="/static/charts.js"></script>
 <script src="/static/risk.js"></script>
+<script src="/static/risk4.js"></script>
 </body>
 </html>

@@ -99,6 +99,74 @@ def compute(p: dict) -> dict:
     return out
 
 
+FACTORS = {"curve_scale": (0.7, 1.3), "exposure_scale": (0.8, 1.2), "hazard_scale": (0.8, 1.2)}
+
+
+def uncertainty(p: dict, n: int = 256, seed: int = 1) -> dict:
+    """Uncertainty and first-order Sobol sensitivity of aai_agg with climada.engine.unsequa.
+
+    Factors (uniform): damage-curve scale (MDD x s, clipped to 1), exposure value scale, hazard intensity scale.
+    `n` is the Sobol base sample size (SALib Saltelli/Sobol: n * (D + 2) model runs, D = 3).
+    """
+    import copy
+
+    import scipy.stats as st
+    from climada.engine.unsequa import CalcImpact, InputVar
+
+    order = np.argsort(p["rps"])
+    rps = [p["rps"][i] for i in order]
+    depth = [[row[i] for i in order] for row in p["depth"]]
+    exps = p["exposures"]
+    if not exps:
+        return {"engine": "CLIMADA unsequa", "version": version("climada"), "n_runs": 0,
+                "aai_agg": {"p5": 0.0, "p50": 0.0, "p95": 0.0, "mean": 0.0}, "sensitivity_S1": {}}
+    lon = np.array([e["lon"] for e in exps])
+    lat = np.array([e["lat"] for e in exps])
+    cent = Centroids.from_lat_lon(lat, lon)
+    classes = sorted(p["impfs"])
+    impf_id = {c: i + 1 for i, c in enumerate(classes)}
+    gdf = gpd.GeoDataFrame({"value": [e["value"] for e in exps], f"impf_{HAZ}": [impf_id[e["cls"]] for e in exps],
+                            f"centr_{HAZ}": np.arange(len(exps))},
+                           geometry=gpd.points_from_xy(lon, lat), crs="EPSG:4326")
+    exp0 = Exposures(gdf, value_unit="EUR", ref_year=PRESENT_YEAR)
+    haz0 = _hazard(cent, rps, depth)
+
+    def impf_func(curve_scale):
+        return ImpactFuncSet([
+            ImpactFunc(haz_type=HAZ, id=impf_id[c], name=c, intensity=np.asarray(p["impfs"][c]["depth"], float),
+                       mdd=np.clip(np.asarray(p["impfs"][c]["mdr"], float) * curve_scale, 0, 1),
+                       paa=np.ones(len(p["impfs"][c]["depth"])), intensity_unit="m") for c in classes])
+
+    def exp_func(exposure_scale):
+        e = exp0.copy()
+        e.gdf["value"] = e.gdf["value"] * exposure_scale
+        return e
+
+    def haz_func(hazard_scale):
+        h = copy.deepcopy(haz0)
+        h.intensity = h.intensity.multiply(hazard_scale).tocsr()
+        return h
+
+    u = lambda lo, hi: st.uniform(lo, hi - lo)  # noqa: E731
+    iv_exp = InputVar(exp_func, {"exposure_scale": u(*FACTORS["exposure_scale"])})
+    iv_impf = InputVar(impf_func, {"curve_scale": u(*FACTORS["curve_scale"])})
+    iv_haz = InputVar(haz_func, {"hazard_scale": u(*FACTORS["hazard_scale"])})
+    calc = CalcImpact(iv_exp, iv_impf, iv_haz)
+    np.random.seed(seed)
+    sample = calc.make_sample(N=n, sampling_method="saltelli", sampling_kwargs={"calc_second_order": False})
+    out = calc.uncertainty(sample, rp=[max(rps)])
+    out = calc.sensitivity(out, sensitivity_method="sobol", sensitivity_kwargs={"calc_second_order": False})
+    vals = out.aai_agg_unc_df["aai_agg"].to_numpy(float)
+    sens = out.get_sensitivity("S1")
+    s1 = {str(r["param"]): float(r["aai_agg"]) for _, r in sens.iterrows()
+          if r["si"] == "S1" and np.isfinite(r["aai_agg"])}
+    return {"engine": "CLIMADA unsequa (Sobol/SALib)", "version": version("climada"), "n_runs": int(vals.size),
+            "factors": {k: list(v) for k, v in FACTORS.items()},
+            "aai_agg": {"p5": float(np.percentile(vals, 5)), "p50": float(np.percentile(vals, 50)),
+                        "p95": float(np.percentile(vals, 95)), "mean": float(vals.mean())},
+            "sensitivity_S1": s1}
+
+
 if __name__ == "__main__":       # JSON on stdin -> JSON on stdout (used by GECAA's agreement test)
     import contextlib
     import io
