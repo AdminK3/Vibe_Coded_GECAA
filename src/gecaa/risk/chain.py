@@ -293,6 +293,7 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
     # measures: reduced runoff coefficient on assigned roofs and the trough itself, limited by storage
     bld_by_id = {str(b["id"]): b for b in blds}
     measure_masks = []
+    m_area = {}   # m² of the measure (roof area for green roofs), from the vector geometries
     for m in req.measures:
         g = to_utm(m.geometry)
         area = rasterize([(g, 1)], out_shape=shape_rc, transform=tr, fill=0, dtype="uint8") == 1
@@ -305,6 +306,11 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
             mask = area | roof
         else:
             mask = area
+        if m.kind == "gruendach" and roofs:
+            from shapely.ops import unary_union
+            m_area[m.id] = round(unary_union(roofs).area, 0)
+        else:
+            m_area[m.id] = round(g.area, 0)
         measure_masks.append((m, mask, mlib.storage_m3(m.kind, g.area, m.depth_m, m.trees, m.pit_m3_per_tree)))
 
     # sewer capacity
@@ -548,7 +554,7 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
                    for sc in req.scenarios},
         "buildings": b_out, "measures": [
             {"id": m.id, "name": m.name, "kind": m.kind, "variant": m.variant if m.kind == "gruendach" else None,
-             "storage_m3": round(s, 1), "roofs": len(m.roof_ids),
+             "storage_m3": round(s, 1), "roofs": len(m.roof_ids), "area_m2": m_area.get(m.id),
              "retained_m3": round(retained_by_ev[(base_sc, req.rps[-1])][i], 1),
              "retained_m3_by_rp": {str(rp): round(retained_by_ev[(base_sc, rp)][i], 1) for rp in req.rps},
              "heat_note": mlib.HEAT_NOTES[m.kind]} for i, (m, _mask, s) in enumerate(measure_masks)],

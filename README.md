@@ -101,6 +101,26 @@ Other improvements: shared location bar for all tabs, dark mode, mobile layout, 
 scenario, with/without measure, flow paths, relief, opacity), SVG charts, project export as JSON, print view.
 Version 2 stays at `/v2`, version 1 at `/v1`.
 
+## Version 5: Umsetzung, Förderung, Berichte
+
+After a heavy-rain run, **„Als Projekt planen“** turns the drawn measures into a project at `/projekte`:
+
+- **Zeitplan and Aufgaben:** seven phases (Grundlagen … Pflege & Wirkungskontrolle) with generic and measure-specific
+  tasks to clarify (e.g. kf-Wert for troughs, Statik for green roofs, Altlasten for unsealing). GECAA proposes no
+  durations or prices: dates, owners and costs come from the user, missing ones show as OFFEN. Bar chart, ICS calendar
+  and CSV task list.
+- **Plan checks:** end before start, overdue tasks, missing owners/dates, funding rules such as "Zusage vor
+  Vorhabenbeginn" (KfW 444) and closed funding windows.
+- **Kosten:** cost lines with source; cost per m³ retained per measure (abgeleitet).
+- **Förderung:** `data/knowledge/funding.yaml` holds KfW 444 NKK, Klimaanpassung.Kommunen.NRW, AnpaSo, DAS and local
+  programmes, each with source, source date and check date. Only published figures are entered; the grant is computed
+  only from user costs × published rate (with caps and minimums) and labelled abgeleitet.
+- **Bericht:** report types (Beschlussvorlage, Förder-Projektskizze, Bürgerinfo, Sachstandsbericht) generate editable
+  Markdown sections from the project data. Rewrite, reorder (drag or arrows), hide, regenerate single sections or add
+  your own; export as PDF (Typst; text is passed as data, never as Typst markup) or Markdown.
+- Projects are stored in SQLite (`data/cache/projects.sqlite`, or `GECAA_PROJECTS_DB`) with optimistic locking and a
+  change log. API: `/v5/...` (see `/docs`).
+
 ## Version 2
 
 Version 2 follows the K3 logic conventions and works anywhere in North Rhine-Westphalia

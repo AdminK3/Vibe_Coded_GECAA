@@ -87,13 +87,33 @@ window.afterRain = () => {
   html += `<div id="unc-box"><button class="btn secondary" type="button" id="unc-btn">Unsicherheit berechnen (CLIMADA unsequa)</button></div>
     <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="pdf-btn" style="width:auto">PDF-Bericht</button>
     <a class="btn secondary" href="/3d?run=${encodeURIComponent(r.run_id)}" target="_blank" rel="noopener">3D-Ansicht</a>
+    <button class="btn primary" type="button" id="proj-btn" style="width:auto">Als Projekt planen</button>
     <a class="btn secondary" href="/v3/risk/${encodeURIComponent(r.run_id)}/geotiff?name=${encodeURIComponent(`depth|${r.scenarios[0]}|${r.rps[r.rps.length - 1]}|base`)}">GeoTIFF (QGIS)</a></div>`;
   const box = document.createElement("div");
   box.innerHTML = html;
   $("#rain-result").appendChild(box);
   $("#unc-btn").onclick = runUncertainty;
   $("#pdf-btn").onclick = downloadPdf;
+  $("#proj-btn").onclick = createProject;
 };
+
+async function createProject() {
+  const c = siteCenter();
+  const label = st.parcel ? `Flurstück ${st.parcel.properties.label || ""}`.trim() : "Standort";
+  const name = prompt("Name des Projekts", `Klimaanpassung ${label}`);
+  if (!name) return;
+  const site = { name: label, address: st.parcel && st.parcel.properties.address, lon: c.lon, lat: c.lat };
+  const measures = (R.rain.measures || []).map((m) => {
+    const d = M4.list.find((x) => x.id === m.id);
+    return { id: m.id, name: m.name, kind: m.kind, variant: m.variant || null, geometry: d ? d.geometry : (m.geometry || null),
+      trees: d && d.trees ? d.trees : null };
+  });
+  try {
+    const p = await api("/v5/projects", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.slice(0, 160), site, run_id: R.rain.run_id, measures }) });
+    window.open(`/projekte#${encodeURIComponent(p.id)}`, "_blank", "noopener");
+  } catch (err) { toast(`Projekt konnte nicht angelegt werden: ${err.message}`, true); }
+}
 
 async function runUncertainty() {
   const b = $("#unc-btn");

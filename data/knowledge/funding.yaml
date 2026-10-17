@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: Apache-2.0
+# Funding programmes for climate adaptation measures (Germany / NRW), as published by the funders.
+# Only figures stated in the cited source are entered; anything not stated is null (shown as OFFEN).
+# checked: date the entry was last compared with the source. Re-check before every application.
+programmes:
+  - id: kfw-444-nkk
+    name: "Natürlicher Klimaschutz in Kommunen (NKK), KfW-Zuschuss 444"
+    funder: "BMUKN, abgewickelt durch die KfW"
+    level: Bund
+    region: DE
+    applicants: [kommune, oeffentlich]
+    applicant_note: "Kommunale Gebietskörperschaften, Gemeindeverbände, Eigenbetriebe, Zweckverbände; weitere nicht Bund/Land zugeordnete Körperschaften des öffentlichen Rechts (z. B. Kirchen). Keine wirtschaftliche Tätigkeit im Sinne des EU-Beihilferechts."
+    measures:
+      entsiegelung: "Förderbereich D (Entsiegelung: D.1 Konzepte, D.2 Umsetzung)"
+      baeume: "Förderbereich B (Pflanzung von Bäumen inkl. Standortoptimierung und Entwicklungspflege)"
+      mulde: null   # no own module for rainwater retention; C.5 only covers small inner-city waters
+      gruendach: null
+    rate: 0.5
+    rate_reduced_budget: 0.8
+    rate_note: "50 % der förderfähigen Kosten; 80 % für finanzschwache Kommunen mit nachgewiesener Haushaltsnotlage nach Landesrecht."
+    min_grant_eur: 15000
+    caps:
+      entsiegelung: {max_total_cost_eur: 1000000, note: "D.2: förderfähige Gesamtkosten höchstens 1 Mio. €; Richtwert 60 €/m², bis 1.000 m² max. 200 €/m², ab 1.000 m² max. 100 €/m²."}
+    window: {type: laufend, opens: null, closes: null, note: "Antrag jederzeit bei der KfW; Zusage muss vor Vorhabenbeginn vorliegen."}
+    before_start: true
+    duration_note: "Förderzeitraum 24 Monate ab Zusage (einmal um bis zu 24 Monate verlängerbar); Verwendungsnachweis innerhalb von 6 Monaten."
+    binding_note: "Zweckbindung für Pflanzungen, Entsiegelung und Naturoasen bis mindestens 2045."
+    source: "https://www.kfw.de/PDF/Download-Center/F%C3%B6rderprogramme-(Inlandsf%C3%B6rderung)/PDF-Dokumente/6000005070_M_444.pdf"
+    source_label: "KfW Merkblatt Zuschuss Nr. 444, Stand 02/2026"
+    checked: 2026-10-17
+
+  - id: nrw-klimaanpassung-kommunen
+    name: "Klimaanpassung.Kommunen.NRW"
+    funder: "Land Nordrhein-Westfalen (EFRE/JTF-Programm NRW)"
+    level: Land
+    region: NRW
+    applicants: [kommune]
+    applicant_note: "Kommunen; Vorhaben an Gebäuden, Grundstücken und im öffentlichen Raum."
+    measures:
+      entsiegelung: "Verfahren 1 (ab 200.000 € netto): Entsiegelung"
+      mulde: "Verfahren 1: Regenwasserspeicherung, Schwammstadt-Elemente, Retention"
+      baeume: "Verfahren 1: Begrünung, Verschattung"
+      gruendach: "Verfahren 2 (unter 200.000 € netto): Dachbegrünung"
+    rate: null
+    rate_note: "Förderquote in der geprüften Quelle nicht genannt – OFFEN, beim Fördergeber erfragen."
+    min_grant_eur: null
+    size_rule: {threshold_net_eur: 200000, above: "Verfahren 1", below: "Verfahren 2"}
+    window: {type: offen, opens: null, closes: null, note: "Antragsfristen laut Programmseite efre.nrw – in der geprüften Quelle nicht genannt."}
+    before_start: null
+    source: "https://zentrum-klimaanpassung.de/news/neues-foerderprogramm-klimaanpassungkommunennrw"
+    source_label: "Zentrum KlimaAnpassung, Meldung vom 03.12.2025; Antrag: efre.nrw"
+    checked: 2026-10-17
+
+  - id: anpaso
+    name: "Klimaanpassung in sozialen Einrichtungen (AnpaSo)"
+    funder: "BMUKN, Projektträger ZUG gGmbH"
+    level: Bund
+    region: DE
+    applicants: [sozial, kommune, oeffentlich, verband]
+    applicant_note: "Gemeinnützige oder öffentlich-rechtlich organisierte soziale Einrichtungen und ihre Träger, die vulnerable Gruppen betreuen."
+    measures:
+      mulde: "FSP 2: investive Umsetzung, vorrangig naturbasierte Lösungen"
+      gruendach: "FSP 2: investive Umsetzung, vorrangig naturbasierte Lösungen"
+      entsiegelung: "FSP 2: investive Umsetzung, vorrangig naturbasierte Lösungen"
+      baeume: "FSP 2: investive Umsetzung, vorrangig naturbasierte Lösungen"
+    concept_required: true
+    rate: null
+    rate_note: "Förderquote in der geprüften Quelle nicht genannt – OFFEN."
+    max_grant_eur: 500000
+    max_note: "FSP 2 (Umsetzung) höchstens 500.000 €; FSP 1 (Konzept) höchstens 70.000 €."
+    min_grant_eur: null
+    window: {type: fenster, opens: 2026-10-01, closes: 2026-11-30, note: "Förderfenster 1. Oktober bis 30. November 2026, Einreichung bei der ZUG."}
+    before_start: null
+    source: "https://www.bundesumweltministerium.de/programm/klimaanpassung-in-sozialen-einrichtungen"
+    source_label: "BMUKN-Programmseite, aktualisiert 03.09.2026"
+    checked: 2026-10-17
+
+  - id: das-anpassung
+    name: "Förderung von Maßnahmen zur Anpassung an die Folgen des Klimawandels (DAS)"
+    funder: "BMUKN, Projektträger ZUG gGmbH"
+    level: Bund
+    region: DE
+    applicants: [kommune, oeffentlich, verband, sozial, unternehmen]
+    applicant_note: "Kommunen, kommunale Einrichtungen und weitere Akteure."
+    measures:
+      mulde: "innovative Anpassungsprojekte (nur in Förderfenstern)"
+      gruendach: "innovative Anpassungsprojekte (nur in Förderfenstern)"
+      entsiegelung: "innovative Anpassungsprojekte (nur in Förderfenstern)"
+      baeume: "innovative Anpassungsprojekte (nur in Förderfenstern)"
+    rate: null
+    rate_note: "Förderquote in der geprüften Quelle nicht genannt – OFFEN."
+    min_grant_eur: null
+    window: {type: fenster, opens: null, closes: 2025-08-05, valid_until: 2026-12-31, note: "Letztes Fenster am 05.08.2025 geschlossen (Mittel ausgeschöpft); weitere Fenster angekündigt, ohne Termin. Richtlinie gilt bis 31.12.2026."}
+    before_start: null
+    source: "https://www.z-u-g.org/das/"
+    source_label: "ZUG – DAS-Förderung"
+    checked: 2026-10-17
+
+  - id: kommunal-lokal
+    name: "Kommunale Förderprogramme (z. B. Dach- und Hofbegrünung, Abkopplung)"
+    funder: "Stadt/Gemeinde bzw. Stadtentwässerung"
+    level: Kommune
+    region: lokal
+    applicants: [privat, unternehmen, sozial, verband]
+    applicant_note: "Viele Städte fördern private Gründächer, Entsiegelung oder Regenwasserabkopplung – Bedingungen je Stadt."
+    measures: {gruendach: "je nach Stadt", entsiegelung: "je nach Stadt", mulde: "je nach Stadt (Abkopplung, Gebührenermäßigung)", baeume: "je nach Stadt"}
+    rate: null
+    rate_note: "OFFEN – bei Stadt oder Stadtentwässerung erfragen; teils auch Ermäßigung der Niederschlagswassergebühr."
+    min_grant_eur: null
+    window: {type: offen, opens: null, closes: null, note: "OFFEN"}
+    before_start: null
+    source: "https://klimaanpassung-unternehmen.nrw/foerdernavigator-klimaanpassung"
+    source_label: "Fördernavigator Klimaanpassung NRW (Übersicht)"
+    checked: 2026-10-17

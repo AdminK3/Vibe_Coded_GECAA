@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>GECAA · Projekte</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/projects.css">
+</head>
+<body class="pj">
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"><svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16 4c5 7 8 11 8 15a8 8 0 0 1-16 0c0-4 3-8 8-15z"/><path d="M12 20a4 4 0 0 0 4 4"/></svg></span>
+    <div><strong>GECAA</strong><span class="sub">Projekte · Umsetzung · Förderung · Berichte</span></div>
+  </div>
+  <div class="top-actions">
+    <span class="save-state" id="save-state" aria-live="polite"></span>
+    <a class="btn secondary" href="/">Zur Karte</a>
+    <button class="icon-btn top" id="theme-btn" type="button" aria-label="Hell/Dunkel umschalten">◐</button>
+  </div>
+</header>
+<div class="pj-layout">
+  <aside class="pj-list" aria-label="Projekte">
+    <h2>Projekte</h2>
+    <div id="plist"></div>
+    <p class="note">Neue Projekte entstehen auf der Karte: Maßnahmen zeichnen, Starkregen rechnen, dann „Als Projekt planen“.</p>
+  </aside>
+  <main class="pj-main" id="main">
+    <div class="empty" id="empty"><h1>Kein Projekt geöffnet</h1><p>Wählen Sie links ein Projekt oder legen Sie es auf der Karte an.</p></div>
+    <div id="proj" hidden>
+      <div class="pj-head">
+        <input id="p-name" class="title-input" aria-label="Projektname" maxlength="160">
+        <div class="row wrap">
+          <label class="inline">Status <select id="p-status">
+            <option value="idee">Idee</option><option value="planung">Planung</option><option value="beantragt">Förderung beantragt</option>
+            <option value="umsetzung">Umsetzung</option><option value="abgeschlossen">Abgeschlossen</option></select></label>
+          <div class="progress" title="Erledigte Aufgaben"><span id="p-prog"></span></div><small id="p-prog-t"></small>
+          <button class="btn link danger" type="button" id="p-del">Projekt löschen</button>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button role="tab" data-t="overview" aria-selected="true">Übersicht</button>
+        <button role="tab" data-t="plan">Zeitplan</button>
+        <button role="tab" data-t="tasks">Aufgaben</button>
+        <button role="tab" data-t="costs">Kosten</button>
+        <button role="tab" data-t="funding">Förderung</button>
+        <button role="tab" data-t="report">Bericht</button>
+        <button role="tab" data-t="log">Verlauf</button>
+      </nav>
+      <section class="tp" id="t-overview"></section>
+      <section class="tp" id="t-plan" hidden></section>
+      <section class="tp" id="t-tasks" hidden></section>
+      <section class="tp" id="t-costs" hidden></section>
+      <section class="tp" id="t-funding" hidden></section>
+      <section class="tp" id="t-report" hidden></section>
+      <section class="tp" id="t-log" hidden></section>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/static/projects.js"></script>
+</body>
+</html>
