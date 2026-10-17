@@ -3,9 +3,14 @@
 # Build LISFLOOD-FP 8.x (University of Bristol, GPL) from the official source release and set up the
 # worker venv. The source is published on Zenodo (concept DOI 10.5281/zenodo.4073010; v8.1 = record
 # 6912932). Override with LISFLOOD_SRC_URL=<zip or tar.gz> or LISFLOOD_SRC_DIR=<unpacked tree>.
-# Usage: services/lisflood_worker/install.sh [prefix] [venv]  (defaults: /opt/lisflood, ~/.venvs/gecaa-lisflood)
+# Usage: services/lisflood_worker/install.sh [prefix] [venv]  (defaults: ~/.local/lisflood, ~/.venvs/gecaa-lisflood)
 set -euo pipefail
-PREFIX="${1:-/opt/lisflood}"
+PREFIX="${1:-$HOME/.local/lisflood}"
+# build dependencies (Debian/Ubuntu): compiler, CMake, NUMA and NetCDF headers
+if command -v apt-get >/dev/null; then
+  SUDO=""; [ "$(id -u)" != "0" ] && SUDO="sudo"
+  $SUDO apt-get update -qq && $SUDO apt-get install -y -qq build-essential cmake libnuma-dev libnetcdf-dev >/dev/null
+fi
 VENV="${2:-$HOME/.venvs/gecaa-lisflood}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 URL="${LISFLOOD_SRC_URL:-https://zenodo.org/records/6912932/files/LISFLOOD-FP%20v8.1.zip?download=1}"

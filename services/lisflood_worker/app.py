@@ -16,7 +16,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-BIN = os.environ.get("LISFLOOD_BIN", "/opt/lisflood/bin/lisflood")
+BIN = os.environ.get("LISFLOOD_BIN", os.path.expanduser("~/.local/lisflood/bin/lisflood"))
 TIMEOUT = float(os.environ.get("LISFLOOD_TIMEOUT_S", "900"))
 NODATA = -9999.0
 WALL_M = 10.0  # building cells are raised by this much

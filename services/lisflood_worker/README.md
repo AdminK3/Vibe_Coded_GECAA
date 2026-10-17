@@ -8,7 +8,7 @@ exchange JSON only. This folder is licensed under the GNU GPL v3 or later (see `
 ## Start
 
 ```bash
-services/lisflood_worker/install.sh      # downloads + CMake-builds LISFLOOD-FP into /opt/lisflood, own venv
+services/lisflood_worker/install.sh      # downloads + CMake-builds LISFLOOD-FP into ~/.local/lisflood, own venv
 services/lisflood_worker/run.sh          # http://127.0.0.1:8002  (GET /health, POST /simulate)
 ```
 Without the worker, GECAA uses its built-in local-inertial solver (`gecaa.risk.inertial`, same Bates et al.
@@ -24,4 +24,4 @@ Without the worker, GECAA uses its built-in local-inertial solver (`gecaa.risk.i
 ```
 Answer: `depth_max` (base64 float32), `engine`, `version`, `log_tail`. Rain blocks of `dt_s` seconds, then zero
 until `duration_s`; all four edges are `FREE` outflow boundaries; solver `acceleration` (local inertial).
-Env: `LISFLOOD_BIN` (default `/opt/lisflood/bin/lisflood`), `LISFLOOD_TIMEOUT_S` (default 900).
+Env: `LISFLOOD_BIN` (default `~/.local/lisflood/bin/lisflood`), `LISFLOOD_TIMEOUT_S` (default 900).
