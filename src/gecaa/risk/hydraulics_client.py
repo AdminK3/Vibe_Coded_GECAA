@@ -29,6 +29,12 @@ def _b64(a, dtype) -> str:
     return base64.b64encode(np.ascontiguousarray(a, dtype=dtype).tobytes()).decode()
 
 
+def _short_version(text: str) -> str:
+    import re
+    m = re.search(r"version\s+([0-9][0-9.]*)", text or "")
+    return m.group(1) if m else (text or "").strip()[:40]
+
+
 def simulate(dem, res, rain_series, coeff=1.0, manning=0.03, mask=None, engine="auto",
              duration_s=3600.0, drain_s=1800.0) -> dict:
     """Return {depth_max, velocity_max (None for LISFLOOD-FP), engine, version, ...}.
@@ -56,8 +62,8 @@ def simulate(dem, res, rain_series, coeff=1.0, manning=0.03, mask=None, engine="
         j = r.json()
         d = np.frombuffer(base64.b64decode(j["depth_max"]), "<f4").reshape(ny, nx)
         return {"depth_max": d, "velocity_max": None, "engine": "LISFLOOD-FP",
-                "version": j.get("version") or health.get("version", ""), "log_tail": j.get("log_tail", "")}
+                "version": _short_version(j.get("version") or health.get("version", "")), "log_tail": j.get("log_tail", "")}
     res_ = inertial.simulate(dem, res, rain, duration_s, drain_s, coeff, manning, mask)
     return {"depth_max": res_.depth_max, "velocity_max": res_.velocity_max, "time_of_max": res_.time_of_max,
-            "engine": "gecaa-inertial", "version": inertial.__version__, "volume": res_.volume,
+            "engine": "GECAA 2D (lokal-träge, Bates et al. 2010)", "version": inertial.__version__, "volume": res_.volume,
             "runtime_s": res_.runtime_s}

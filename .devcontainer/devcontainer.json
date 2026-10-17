@@ -1,10 +1,11 @@
 {
   "name": "GECAA",
   "image": "mcr.microsoft.com/devcontainers/python:3.12",
-  "postCreateCommand": "pip install -e '.[dev]' && (setsid nohup bash services/climada_worker/install.sh < /dev/null > /tmp/climada_install.log 2>&1 &)",
+  "postCreateCommand": "pip install -e '.[dev,heat,stac,ogc,hydraulics,sewer]' && (setsid nohup bash -c 'bash services/climada_worker/install.sh; bash services/lisflood_worker/install.sh; python scripts/prepare_zensus.py' < /dev/null > /tmp/gecaa_setup.log 2>&1 &)",
   "postAttachCommand": {
     "app": "uvicorn gecaa.api:app --host 0.0.0.0 --port 8000",
-    "climada": "bash -c 'for i in $(seq 1 120); do [ -x $HOME/.venvs/gecaa-climada/bin/uvicorn ] && exec bash services/climada_worker/run.sh; sleep 10; done'"
+    "climada": "bash -c 'for i in $(seq 1 120); do [ -x $HOME/.venvs/gecaa-climada/bin/uvicorn ] && exec bash services/climada_worker/run.sh; sleep 10; done'",
+    "lisflood": "bash -c 'for i in $(seq 1 180); do [ -x $HOME/.local/lisflood/bin/lisflood ] && exec bash services/lisflood_worker/run.sh; sleep 10; done'"
   },
   "forwardPorts": [
     8000

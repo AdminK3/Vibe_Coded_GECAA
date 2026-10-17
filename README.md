@@ -40,6 +40,24 @@ demo-c     not feasible                  52%  (open)
            decisive: Distance to groundwater - Check groundwater levels with the lower water authority or a monitoring well near the site.
 ```
 
+## Version 4: deeper analysis and outputs
+
+| Area | What is new | Open source / open data |
+|---|---|---|
+| **2D hydraulics** | "2D-Simulation" in the Starkregen tab: water depth over time instead of the static screening | LISFLOOD-FP 8.1 (separate GPL service, `services/lisflood_worker`); fallback: GECAA's own local-inertial solver (Bates et al. 2010) |
+| **Cross-check** | Depression depth and wetness index | WhiteboxTools |
+| **Sewer** | Sewer takes the design rain (DWA-A 118 / DIN EN 752, default 3-year); optional SWMM model upload, node flooding added to the surface | KOSTRA, PySWMM / EPA SWMM |
+| **Measures** | Green roof (extensive/intensive), unsealing, trees (drawn canopy, tree pits), troughs; retained volume and heat note per measure | DIN 1986-100 (oriented), literature values with sources |
+| **Buildings** | Measured heights and storeys, residents per building (Zensus 100 m cells shared by floor area), optional basements | NRW LoD2 (OGC API 3D), Zensus 2022 |
+| **Uncertainty** | 90 % range of the expected annual damage and Sobol sensitivity | CLIMADA unsequa (worker), numpy Monte Carlo fallback |
+| **Heat** | Heatwaves and tropical nights at the nearest DWD station; summer land surface temperature map | xclim (CLIMAAX thresholds), Landsat via STAC (Planetary Computer) |
+| **Planning** | Development plans around the site with legal status and link | NRW INSPIRE Planned Land Use (OGC API) |
+| **Outputs** | PDF report (all analyses), 3D view, GeoTIFF export, OGC API Processes under `/ogc`, QGIS plugin | Typst, MapLibre GL, rasterio, pygeoapi, QGIS |
+
+Install all optional parts: `pip install -e '.[heat,stac,ogc,hydraulics,sewer]'`, then
+`services/climada_worker/install.sh`, `services/lisflood_worker/install.sh` and `python scripts/prepare_zensus.py`
+(Codespaces does this automatically on creation). Every part degrades gracefully when missing and says so.
+
 ## Version 3: climate risk at the site (start page)
 
 Version 3 adds two analyses and a risk assessment to the permit check, all for any place in NRW with live open

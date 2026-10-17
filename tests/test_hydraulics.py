@@ -10,7 +10,7 @@ def test_client_falls_back_without_worker(monkeypatch):
     dem = 0.01 * ((x - 10) ** 2 + (y - 10) ** 2)
     r = hydraulics_client.simulate(dem, 2.0, [30, 60], coeff=0.9, manning=0.03, mask=None,
                                    duration_s=600, drain_s=300)
-    assert r["engine"] == "gecaa-inertial" and r["version"]
+    assert r["engine"].startswith("GECAA 2D") and r["version"]
     assert r["depth_max"].shape == (20, 20) and r["depth_max"].max() > 0
     assert r["velocity_max"] is not None
     with pytest.raises(RuntimeError):

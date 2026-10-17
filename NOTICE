@@ -43,6 +43,20 @@ services/climada_worker, which is itself licensed GPL-3.0-or-later (see
 services/climada_worker/LICENSE). GECAA exchanges only JSON data with it and also
 runs without it (built-in fallback engine).
 
+Version 4 adds:
+  LISFLOOD-FP 8.1 (University of Bristol, GPL-2.0-only) - NOT part of GECAA; downloaded and built by
+  services/lisflood_worker/install.sh and run as a separate program behind a GPL service. GECAA's own
+  2D solver (src/gecaa/risk/inertial.py) implements the published local-inertial method of
+  Bates, Horritt & Fewtrell (2010) independently.
+  WhiteboxTools (MIT), xclim (Apache-2.0), xarray (Apache-2.0), pystac-client (Apache-2.0),
+  planetary-computer (MIT), PySWMM (BSD-2-Clause) / EPA SWMM (public domain), pygeoapi (MIT),
+  typst (Apache-2.0), MapLibre GL JS 4.7.1 (BSD-3-Clause, bundled in src/gecaa/web/vendor/maplibre).
+  QGIS plugin in qgis_plugin/ is licensed GPL-2.0-or-later (QGIS API requirement).
+  Data at run time: Geobasis NRW 3D building models LoD2 (dl-de/zero-2-0), INSPIRE Planned Land Use
+  NRW / development plans (dl-de/by-2-0), Zensus 2022 100 m grid (Destatis, dl-de/by-2-0),
+  DWD daily station data (CC BY 4.0), Landsat Collection 2 Level-2 via Microsoft Planetary Computer
+  (USGS, public domain).
+
 Legal texts retrieved from the federal legal information system
 (rechtsinformationen.bund.de / gesetze-im-internet.de) are official works
 and not subject to copyright under section 5 UrhG.
