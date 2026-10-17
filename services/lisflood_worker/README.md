@@ -25,3 +25,8 @@ Without the worker, GECAA uses its built-in local-inertial solver (`gecaa.risk.i
 Answer: `depth_max` (base64 float32), `engine`, `version`, `log_tail`. Rain blocks of `dt_s` seconds, then zero
 until `duration_s`; all four edges are `FREE` outflow boundaries; solver `acceleration` (local inertial).
 Env: `LISFLOOD_BIN` (default `~/.local/lisflood/bin/lisflood`), `LISFLOOD_TIMEOUT_S` (default 900).
+
+## Licences
+This worker (app.py, install.sh, run.sh) is GPL-3.0-or-later. **LISFLOOD-FP itself is GPL-2.0-only**: it is
+downloaded and built separately by `install.sh` and only executed as a separate program (subprocess), never linked
+or combined with the worker's code. GECAA talks to the worker over HTTP only.

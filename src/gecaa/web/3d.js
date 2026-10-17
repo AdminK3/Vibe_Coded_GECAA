@@ -1,7 +1,8 @@
+"use strict";
+const esc3 = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // SPDX-License-Identifier: Apache-2.0
 // GECAA 3D view (MapLibre GL JS, BSD-3): basemap.de raster, buildings as fill-extrusion coloured by depth class,
 // depth PNG as image source. Reads a run from GET /v3/risk/{run_id}/result (runs made via POST /v3/risk/rain3d).
-"use strict";
 (function () {
   const $ = (s) => document.querySelector(s);
   const CLASSES = [[0.05, "#d9d9d9", "< 5 cm"], [0.10, "#c6e6f7", "5–10 cm"], [0.30, "#8cc8ee", "10–30 cm"],
@@ -66,7 +67,7 @@
       map.on("click", "bld", (ev) => {
         const p = ev.features[0].properties;
         new maplibregl.Popup().setLngLat(ev.lngLat).setHTML(
-          `<b>${p.label}</b><br>Wassertiefe: ${Number(p.depth).toLocaleString("de-DE")} m<br>` +
+          `<b>${esc3(p.label)}</b><br>Wassertiefe: ${Number(p.depth).toLocaleString("de-DE")} m<br>` +
           `Jahresschaden (Untergrenze/Größenordnung): ${Number(p.eai || 0).toLocaleString("de-DE")} €`).addTo(map);
       });
     }

@@ -64,6 +64,8 @@ def _rain(rain: dict | None) -> tuple[dict | None, list[str]]:
     rows = [["Szenario", str(sc)], ["Wiederkehrintervalle", ", ".join(f"{x} a" for x in rps)],
             ["Regenquelle", str(r.get("source", "–"))], ["Dauerstufe", _n(r.get("duration_min"), 0, "min")],
             ["Schwellenhöhe", _n(thr * 100, 0, "cm")]]
+    if rain.get("client_supplied"):
+        rows.insert(0, ["Herkunft der Werte", "vom Browser übermittelt (Server-Ergebnis abgelaufen), nicht geprüft"])
     eai = imp.get("aai_agg")
     if eai is not None:
         rows.append(["Erwarteter Jahresschaden (Untergrenze/Größenordnung)", _n(eai, 0, "EUR/Jahr")])

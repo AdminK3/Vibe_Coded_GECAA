@@ -26,6 +26,10 @@ def decode_inp(b64: str) -> str:
     data = base64.b64decode(b64, validate=True)
     if len(data) > 2 * 1024 * 1024:
         raise ValueError("SWMM-Datei größer als 2 MB")
+    import re
+    text = data.decode("latin-1")
+    if re.search(r"^\s*\[FILES\]", text, re.I | re.M) or re.search(r"\bFILE\b", text, re.I):
+        raise ValueError("SWMM-Dateien mit Verweisen auf andere Dateien ([FILES], FILE) sind nicht erlaubt")
     fd, path = tempfile.mkstemp(suffix=".inp")
     with os.fdopen(fd, "wb") as f:
         f.write(data)

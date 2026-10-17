@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 BIN = os.environ.get("LISFLOOD_BIN", os.path.expanduser("~/.local/lisflood/bin/lisflood"))
 TIMEOUT = float(os.environ.get("LISFLOOD_TIMEOUT_S", "900"))
@@ -25,15 +25,15 @@ app = FastAPI(title="GECAA LISFLOOD-FP worker")
 
 
 class SimRequest(BaseModel):
-    dem: str  # base64 float32, row-major (north row first), ny*nx
-    nx: int
-    ny: int
-    res: float
-    rain_mm_h: list[float]
-    dt_s: float  # length of each rain block
-    duration_s: float  # total simulated time (rain + drain)
-    manning: float | str = 0.03  # scalar or base64 float32 grid
-    mask: str | None = None  # base64 uint8 building mask
+    dem: str = Field(max_length=6_000_000)  # base64 float32, row-major (north row first), ny*nx (<= 1000 x 1000)
+    nx: int = Field(ge=3, le=1000)
+    ny: int = Field(ge=3, le=1000)
+    res: float = Field(gt=0.2, le=50)
+    rain_mm_h: list[float] = Field(min_length=1, max_length=96)
+    dt_s: float = Field(gt=0, le=86400)  # length of each rain block
+    duration_s: float = Field(gt=0, le=6 * 3600)  # total simulated time (rain + drain)
+    manning: float | str = Field(0.03, max_length=6_000_000)  # scalar or base64 float32 grid
+    mask: str | None = Field(None, max_length=2_000_000)  # base64 uint8 building mask
 
 
 def _grid(b64: str, dtype, ny, nx):

@@ -16,6 +16,7 @@ from .risk import chain, cra, engine_client, heat
 from .risk.kostra import Kostra
 
 router = APIRouter(prefix="/v3", tags=["v3 (Klimarisiko)"])
+MAX_UNC_EXPOSURES = 2000
 _RAIN_SLOTS = threading.BoundedSemaphore(2)      # at most two heavy-rain analyses at a time (CPU, memory)
 
 
@@ -123,7 +124,12 @@ class ReportRequest(BaseModel):
 def report_pdf(req: ReportRequest):
     from .report.typst_report import build_pdf
     try:
-        pdf = build_pdf(req.rain, req.heat, req.cra, req.check, req.site)
+        rain = req.rain
+        if rain and rain.get("run_id") in _RESULTS:      # use the server's own result, not client-sent numbers
+            rain = _RESULTS[rain["run_id"]]
+        elif rain:
+            rain = {**rain, "client_supplied": True}
+        pdf = build_pdf(rain, req.heat, req.cra, req.check, req.site)
     except Exception as exc:  # typst compile errors on odd inputs
         raise HTTPException(422, f"Bericht konnte nicht erstellt werden: {type(exc).__name__}: {exc}"[:400]) from exc
     return Response(pdf, media_type="application/pdf",
@@ -180,9 +186,9 @@ def risk_geotiff(run_id: str, name: str = Query(..., max_length=80)):
 
 class UncertaintyRequest(BaseModel):
     rps: list[float] = Field(min_length=1, max_length=10)
-    exposures: list[dict] = Field(max_length=20000)
+    exposures: list[dict] = Field(max_length=MAX_UNC_EXPOSURES)
     impfs: dict[str, dict]
-    depth: list[list[float]]
+    depth: list[list[float]] = Field(max_length=MAX_UNC_EXPOSURES)
     measure_depth: list[list[float]] | None = None
     cost_eur: float | None = None
     years: int = Field(30, ge=1, le=100)
@@ -288,6 +294,8 @@ def risk_run_uncertainty(run_id: str):
     p = chain._RUNS.get(run_id, {}).get("payload")
     if p is None:
         raise HTTPException(404, "Ergebnis abgelaufen – bitte neu rechnen")
+    if len(p["exposures"]) > MAX_UNC_EXPOSURES:
+        raise HTTPException(422, f"Zu viele Gebäude für die Unsicherheitsanalyse (höchstens {MAX_UNC_EXPOSURES})")
     if not p["exposures"]:
         return {"note": "keine Gebäude im Gebiet"}
     return _uncertainty.assess(dict(p), prefer_worker=True)

@@ -32,13 +32,13 @@ ASSUMPTIONS = {
 }
 
 HEAT_NOTES = {
-    "mulde": "Feuchte Mulden mit Bewuchs kühlen lokal durch Verdunstung; die Wirkung ist klein und kleinräumig.",
-    "gruendach": "Gründächer senken die Oberflächentemperatur des Dachs deutlich und verbessern das Raumklima im "
-                 "Dachgeschoss; auf die gefühlte Temperatur im Straßenraum wirken sie kaum.",
-    "entsiegelung": "Entsiegelte, bewachsene Flächen heizen sich weniger auf als Asphalt und kühlen durch "
+    "mulde": "Qualitative Einschätzung: Feuchte Mulden mit Bewuchs kühlen lokal durch Verdunstung; die Wirkung ist klein und kleinräumig.",
+    "gruendach": "Qualitative Einschätzung: Gründächer senken vor allem die Oberflächentemperatur des Dachs und "
+                 "verbessern das Raumklima darunter; auf die gefühlte Temperatur im Straßenraum wirken sie wenig.",
+    "entsiegelung": "Qualitative Einschätzung: Entsiegelte, bewachsene Flächen heizen sich weniger auf als Asphalt und kühlen durch "
                     "Verdunstung; die Wirkung ist lokal.",
-    "baeume": "Bäume senken durch Schatten und Verdunstung die Oberflächen- und gefühlte Temperatur darunter "
-              "deutlich; das ist die wirksamste Hitzemaßnahme im Straßenraum.",
+    "baeume": "Qualitative Einschätzung: Bäume senken durch Schatten und Verdunstung die Oberflächen- und gefühlte "
+              "Temperatur in ihrem Kronenbereich; die Wirkung ist hier nicht beziffert.",
 }
 
 

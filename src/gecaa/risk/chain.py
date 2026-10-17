@@ -458,7 +458,7 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
             _add_basement(impacts[sc], buildings, curves, req, payload)
     step("Schadensberechnung")
 
-    persons = _persons(provider, bbox, buildings)
+    persons = _persons(provider, bbox, buildings, blds)
 
     # 7 layers (PNG) and result
     # map overlays: warp from UTM to Web Mercator so they line up exactly with the Leaflet map
@@ -604,8 +604,11 @@ def layer(run_id: str, name: str) -> bytes | None:
     return v if isinstance(v, bytes) else None
 
 
-def _persons(provider, bbox, buildings) -> dict:
-    """Zensus 2022 residents per 100 m cell, shared out to residential buildings in the cell by floor area."""
+def _persons(provider, bbox, buildings, all_blds=None) -> dict:
+    """Zensus 2022 residents per 100 m cell, shared out to residential buildings in the cell by floor area.
+
+    Shares use every residential building in the cell from the analysis area incl. its 100 m border, so a cell
+    on the edge of the inner box is not given entirely to the few buildings inside the box."""
     try:
         from .population import population
         cells = population(provider, bbox)
@@ -613,20 +616,23 @@ def _persons(provider, bbox, buildings) -> dict:
         cells = None
     if not cells:
         return {}
+    exposed = {b.id: b for b in buildings}
     by_cell: dict = {}
-    for b in buildings:
-        if b.cls != "residential":
+    for b in (all_blds or []):
+        if damage.classify(b["function"]) != "residential":
             continue
-        key = (int(b.x // 100) * 100, int(b.y // 100) * 100)
-        by_cell.setdefault(key, []).append(b)
+        g = b["geometry"]
+        c = g.centroid
+        floor = g.area * (b.get("storeys") or (round(b["height_m"] / 3.0) if b.get("height_m") else 1) or 1)
+        by_cell.setdefault((int(c.x // 100) * 100, int(c.y // 100) * 100), []).append((str(b["id"]), floor))
     out = {}
     for c in cells:
         key = (int(c["x"] // 100) * 100, int(c["y"] // 100) * 100)
         bl = by_cell.get(key)
         if not bl or not c.get("residents"):
             continue
-        floor = [b.footprint_m2 * (b.storeys or 1) for b in bl]
-        tot = sum(floor) or 1.0
-        for b, f in zip(bl, floor):
-            out[b.id] = round(c["residents"] * f / tot, 1)
+        tot = sum(f for _, f in bl) or 1.0
+        for bid, f in bl:
+            if bid in exposed:
+                out[bid] = round(c["residents"] * f / tot, 1)
     return out
