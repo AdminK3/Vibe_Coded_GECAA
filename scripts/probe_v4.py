@@ -15,8 +15,23 @@ UA = {"User-Agent": "GECAA/0.4 probe"}
 DWD = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/"
 
 
+class _Failed:
+    is_success = False
+    status_code = 0
+    content = b""
+    text = ""
+    headers: dict = {}
+
+    def json(self):
+        return {}
+
+
 def get(url, **params):
-    r = httpx.get(url, params=params, headers=UA, timeout=60, follow_redirects=True)
+    try:
+        r = httpx.get(url, params=params, headers=UA, timeout=60, follow_redirects=True)
+    except Exception as exc:  # keep probing the other endpoints
+        print(f"\n== {url}\n   FEHLER {type(exc).__name__}: {exc}")
+        return _Failed()
     print(f"\n== {r.request.url}\n   {r.status_code} {r.headers.get('content-type')} {len(r.content)} B")
     return r
 
