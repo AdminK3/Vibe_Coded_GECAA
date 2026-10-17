@@ -243,8 +243,8 @@ async function boot() {
   applyColors();
   timeline();
   const [w, s, e, n] = sc.terrain.rect;
-  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees((w + e) / 2, s - (n - s) * 0.9, sc.terrain.max + (n - s) * 111000 * 0.9),
-    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-38), roll: 0 } });
+  viewer.camera.setView({ destination: Cesium.Cartesian3.fromDegrees((w + e) / 2, s - (n - s) * 0.35, sc.terrain.max + Math.max(150, (n - s) * 111000 * 0.6)),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-30), roll: 0 } });
   const h = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   h.setInputAction((m) => { const p = viewer.scene.pick(m.position); if (p && typeof p.id === "string") info(p.id.split("|")[0]); }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
   // split slider
