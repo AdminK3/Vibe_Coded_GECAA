@@ -45,3 +45,4 @@ h3 { font-size: 13px; margin: 12px 0 4px; } h3 small { color: var(--muted); font
 .modal .close { position: absolute; top: 14px; right: 18px; font-size: 28px; color: #fff; background: none; border: 0; cursor: pointer; }
 @media (max-width: 640px) { .panel { width: auto; right: 12px; max-height: 46%; top: auto; bottom: 12px; } }
 [hidden] { display: none !important; }
+.gsv { width: 100%; height: 220px; border: 0; border-radius: 6px; }

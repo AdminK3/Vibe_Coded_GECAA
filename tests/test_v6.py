@@ -100,3 +100,34 @@ def test_twin_page_vendored():
     assert r.status_code == 200 and "/static/vendor/cesium/Cesium.js" in r.text and "cdn" not in r.text.lower()
     assert client.get("/static/vendor/cesium/Cesium.js").status_code == 200
     assert client.get("/static/twin.js").status_code == 200
+
+
+def test_google_streetview_disabled_without_key(monkeypatch):
+    monkeypatch.delenv("GECAA_GOOGLE_MAPS_KEY", raising=False)
+    assert client.get("/v6/streetview", params={"lon": 7.0, "lat": 51.0}).json() == {"enabled": False}
+
+
+def test_google_streetview_with_simulated_key(monkeypatch):
+    import httpx
+    monkeypatch.setenv("GECAA_GOOGLE_MAPS_KEY", "TEST-KEY")
+    calls = []
+
+    class R:
+        def __init__(self, status):
+            self.status = status
+
+        def json(self):
+            if self.status == "OK":     # panorama 40 m south of the building -> camera must look north
+                return {"status": "OK", "pano_id": "PANO1", "location": {"lat": 50.99964, "lng": 7.0}, "date": "2024-05"}
+            return {"status": "ZERO_RESULTS"}
+
+    def fake_get(url, params=None, **k):
+        calls.append((url, params))
+        return R("OK" if params["location"].startswith("51.0,") else "NONE")
+    monkeypatch.setattr(httpx, "get", fake_get)
+    g = client.get("/v6/streetview", params={"lon": 7.0, "lat": 51.0}).json()
+    assert g["available"] and g["heading"] in (0, 360) and 35 <= g["distance_m"] <= 45
+    assert g["embed_url"].startswith("https://www.google.com/maps/embed/v1/streetview?") and "pano=PANO1" in g["embed_url"]
+    assert "metadata" in calls[0][0] and calls[0][1]["key"] == "TEST-KEY"
+    g = client.get("/v6/streetview", params={"lon": 7.1, "lat": 51.1}).json()
+    assert g["enabled"] and not g["available"]

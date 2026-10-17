@@ -193,6 +193,14 @@ async function runLst() {
 async function showStreet() {
   const c = siteCenter(), box = $("#street");
   box.innerHTML = `<p class="note">Suche offene Straßenbilder …</p>`;
+  api(`/v6/streetview?lon=${c.lon}&lat=${c.lat}`).then((g) => {
+    if (!g.enabled) return;
+    const el = document.createElement("div");
+    el.innerHTML = g.available ? `<iframe class="gsv" src="${esc(g.embed_url)}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Google Street View"></iframe>
+      <p class="note">${esc(g.note)} <a href="${esc(g.maps_url)}" target="_blank" rel="noopener noreferrer">In Google Maps öffnen</a></p>`
+      : `<p class="note">Google Street View: kein Panorama im Umkreis.</p>`;
+    box.before(el);
+  }).catch(() => {});
   try {
     const r = await api(`/v6/street?lon=${c.lon}&lat=${c.lat}&radius=120`);
     if (!r.images.length) { box.innerHTML = `<p class="note">${esc(r.error || "Keine offenen Straßenbilder im Umkreis von 120 m.")} Eigene Fotos lassen sich bei Panoramax hochladen.</p>`; return; }

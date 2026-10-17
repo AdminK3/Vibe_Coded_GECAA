@@ -186,9 +186,11 @@ async function info(bid) {
     ${b.persons != null ? `<tr><td>Bewohner (Zensus, abgeleitet)</td><td>≈ ${Math.round(b.persons)}</td></tr>` : ""}
     <tr><td>Höhe</td><td>${b.height ? `${b.height.toLocaleString("de-DE")} m` : "OFFEN"}</td></tr>
     <tr><td>Geometrie</td><td>${esc(b.source)}</td></tr></table>
-    <h3>Straßenbilder</h3><div id="street" class="note">Suche offene Straßenbilder …</div>`;
+    <div id="gsv"></div>
+    <h3>Straßenbilder (offen)</h3><div id="street" class="note">Suche offene Straßenbilder …</div>`;
   const pts = (b.surfaces ? b.surfaces.flatMap((f) => f.ring) : b.footprint) || [];
   const lon = pts.reduce((a, p) => a + p[0], 0) / pts.length, lat = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  googleSV(lon, lat, bid);
   try {
     const r = await (await fetch(`/v6/street?lon=${lon}&lat=${lat}&radius=80`)).json();
     if (S.sel !== bid) return;
@@ -203,6 +205,18 @@ async function info(bid) {
       $("#modal").hidden = false;
     }));
   } catch (e) { if (S.sel === bid) $("#street").textContent = "Straßenbilder nicht erreichbar."; }
+}
+
+async function googleSV(lon, lat, bid) {
+  try {
+    const g = await (await fetch(`/v6/streetview?lon=${lon}&lat=${lat}`)).json();
+    if (!g.enabled || S.sel !== bid) return;
+    $("#gsv").innerHTML = g.available
+      ? `<h3>Google Street View <small>${esc(g.pano_date || "")} · ${g.distance_m} m</small></h3>
+         <iframe class="gsv" src="${esc(g.embed_url)}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Google Street View"></iframe>
+         <p class="note">${esc(g.note)} <a href="${esc(g.maps_url)}" target="_blank" rel="noopener noreferrer">In Google Maps öffnen</a></p>`
+      : `<p class="note">Google Street View: kein Panorama im Umkreis (${esc(g.status || "")}).</p>`;
+  } catch (e) { /* optional source */ }
 }
 
 // ------------------------------------------------------------------ boot

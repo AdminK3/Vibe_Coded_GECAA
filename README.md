@@ -111,7 +111,7 @@ Version 2 stays at `/v2`, version 1 at `/v1`.
   shown as ALKIS footprints (height OFFEN if unknown).
 - **Straßenbilder:** open street-level photos from Panoramax (CC-BY-SA, no key), nearest first and those looking at the
   building marked; in the twin per building and on the map for the site. Mapillary is added when
-  `GECAA_MAPILLARY_TOKEN` is set. Google Street View is not embedded (licence/API key).
+  `GECAA_MAPILLARY_TOKEN` is set. Google Street View is optional: set `GECAA_GOOGLE_MAPS_KEY` (Maps Embed API key with billing account, restricted to your domain) and GECAA shows Google's own Street View frame turned towards the building, using the free Street View metadata request to find the nearest panorama. Images are only displayed, never stored or analysed (Google Maps Platform terms).
 
 ## Version 5: Umsetzung, Förderung, Berichte
 

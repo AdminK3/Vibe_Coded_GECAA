@@ -207,3 +207,40 @@ def street_images(lon: float = Query(ge=5.0, le=16.0), lat: float = Query(ge=47.
         if len(_CACHE) > 500:
             _CACHE.pop(next(iter(_CACHE)))
     return out
+
+
+# ------------------------------------------------------------------ Google Street View (optional, needs a key)
+
+def _google_key() -> str | None:
+    return os.environ.get("GECAA_GOOGLE_MAPS_KEY") or None
+
+
+@router.get("/streetview")
+def google_streetview(lon: float = Query(ge=5.0, le=16.0), lat: float = Query(ge=47.0, le=56.0),
+                      radius: int = Query(80, ge=10, le=300)):
+    """Embed URL for Google Street View looking at a point (Maps Embed API, street view mode).
+
+    Only when GECAA_GOOGLE_MAPS_KEY is set. The free Street View metadata request finds the nearest panorama so the
+    view can be turned towards the building. Images are only displayed in Google's own frame; nothing is stored or
+    analysed (Google Maps Platform terms)."""
+    key = _google_key()
+    if not key:
+        return {"enabled": False}
+    pano = None
+    try:
+        m = httpx.get("https://maps.googleapis.com/maps/api/streetview/metadata",
+                      params={"location": f"{lat},{lon}", "radius": radius, "source": "outdoor", "key": key}, timeout=10).json()
+        if m.get("status") == "OK":
+            pano = {"id": m.get("pano_id"), "lat": m["location"]["lat"], "lon": m["location"]["lng"], "date": m.get("date")}
+        status = m.get("status")
+    except (httpx.HTTPError, ValueError, KeyError) as exc:
+        status = f"Fehler: {type(exc).__name__}"
+    if not pano:
+        return {"enabled": True, "available": False, "status": status}
+    heading = round(_bearing(pano["lon"], pano["lat"], lon, lat))
+    q = httpx.QueryParams({"key": key, "pano": pano["id"], "heading": heading, "pitch": 5, "fov": 80})
+    return {"enabled": True, "available": True, "status": status, "pano_date": pano["date"],
+            "distance_m": round(_dist_m(lon, lat, pano["lon"], pano["lat"])), "heading": heading,
+            "embed_url": f"https://www.google.com/maps/embed/v1/streetview?{q}",
+            "maps_url": f"https://www.google.com/maps/@?api=1&map_action=pano&pano={pano['id']}&heading={heading}",
+            "note": "Bilder © Google. Nur Anzeige im Google-Fenster; keine Speicherung oder Auswertung."}
