@@ -64,3 +64,7 @@ and not subject to copyright under section 5 UrhG.
 Technical standards such as DWA-A 138-1 are licensed works. This repository
 contains only references to them and threshold values derived from them,
 never their copyrighted text.
+
+v6: CesiumJS 1.146.0 (Apache-2.0, Copyright Cesium GS, Inc. and contributors), bundled in src/gecaa/web/vendor/cesium
+(LICENSE.md there lists its third-party components). Street-level photos are loaded at runtime from Panoramax
+(per-image licence, typically CC-BY-SA-4.0) and optionally Mapillary (CC-BY-SA); they are not stored.

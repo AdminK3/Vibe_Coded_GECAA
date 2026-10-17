@@ -483,6 +483,10 @@ def run(provider, req: RainRequest, kostra=None) -> dict:
             if variant in ev:
                 layers[f"grid|{sc}|{rp}|{variant}"] = {"array": ev[variant].depth.astype("float32"), "transform": tr}
     layers["payload"] = base_payload                  # for the uncertainty analysis of this run
+    layers["dem"] = {"array": dem.astype("float32"), "transform": tr}     # terrain for the digital twin
+    layers["bbox"] = bbox
+    layers["provider"] = provider
+    layers["footprints"] = {str(b["id"]): b["geometry"] for b in blds}
     _RUNS[run_id] = layers
     while len(_RUNS) > MAX_RUNS:
         _RUNS.popitem(last=False)

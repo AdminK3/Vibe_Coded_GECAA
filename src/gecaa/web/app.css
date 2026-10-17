@@ -184,3 +184,7 @@ table.kra td:first-child { min-width: 150px; }
 .range-bar { position: relative; height: 10px; border-radius: 5px; background: var(--line); margin: 8px 0 4px; }
 .range-bar span { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: var(--accent); opacity: .55; }
 .range-bar i { position: absolute; top: -3px; width: 3px; height: 16px; background: var(--ink); }
+.street-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
+.street-strip a { position: relative; display: block; }
+.street-strip img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 5px; display: block; }
+.street-strip small { position: absolute; left: 3px; bottom: 3px; background: rgba(0,0,0,.6); color: #fff; font-size: 10px; padding: 0 4px; border-radius: 3px; }

@@ -101,6 +101,18 @@ Other improvements: shared location bar for all tabs, dark mode, mobile layout, 
 scenario, with/without measure, flow paths, relief, opacity), SVG charts, project export as JSON, print view.
 Version 2 stays at `/v2`, version 1 at `/v1`.
 
+## Version 6: Digitaler Zwilling und Straßenbilder
+
+- **`/zwilling?run=<id>[&project=<id>]`** (CesiumJS 1.146, Apache-2.0, bundled under `web/vendor/cesium`): terrain from the
+  run's DGM1, LoD2 buildings with real roof and wall faces (OGC API 3dg, CityJSON) placed on that terrain and coloured by
+  flood depth, the water depth draped on the ground, measures from the project. Switch climate scenario and return
+  period, show the area with or without measures, or compare both with a split slider. With a project, a timeline plays
+  through the phases and switches to "mit Maßnahmen" once the Umsetzung phase has ended. Buildings without LoD2 are
+  shown as ALKIS footprints (height OFFEN if unknown).
+- **Straßenbilder:** open street-level photos from Panoramax (CC-BY-SA, no key), nearest first and those looking at the
+  building marked; in the twin per building and on the map for the site. Mapillary is added when
+  `GECAA_MAPILLARY_TOKEN` is set. Google Street View is not embedded (licence/API key).
+
 ## Version 5: Umsetzung, Förderung, Berichte
 
 After a heavy-rain run, **„Als Projekt planen“** turns the drawn measures into a project at `/projekte`:

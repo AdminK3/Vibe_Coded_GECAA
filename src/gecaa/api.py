@@ -43,6 +43,9 @@ app.include_router(v3_router)
 from .api_v5 import router as v5_router  # noqa: E402
 
 app.include_router(v5_router)
+from .api_v6 import router as v6_router  # noqa: E402
+
+app.include_router(v6_router)
 
 try:  # OGC API - Processes (pygeoapi, optional extra "ogc"); disable with GECAA_OGC=0
     import os as _os
@@ -56,6 +59,11 @@ except ImportError:
 @app.get("/3d", include_in_schema=False)
 def view_3d():
     return FileResponse(WEB_DIR / "3d.html")
+
+
+@app.get("/zwilling", include_in_schema=False)
+def view_twin():
+    return FileResponse(WEB_DIR / "twin.html")
 
 
 @app.get("/projekte", include_in_schema=False)

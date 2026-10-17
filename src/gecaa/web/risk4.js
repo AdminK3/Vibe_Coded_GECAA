@@ -86,6 +86,7 @@ window.afterRain = () => {
   }
   html += `<div id="unc-box"><button class="btn secondary" type="button" id="unc-btn">Unsicherheit berechnen (CLIMADA unsequa)</button></div>
     <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="pdf-btn" style="width:auto">PDF-Bericht</button>
+    <a class="btn secondary" href="/zwilling?run=${encodeURIComponent(r.run_id)}" target="_blank" rel="noopener">Digitaler Zwilling</a>
     <a class="btn secondary" href="/3d?run=${encodeURIComponent(r.run_id)}" target="_blank" rel="noopener">3D-Ansicht</a>
     <button class="btn primary" type="button" id="proj-btn" style="width:auto">Als Projekt planen</button>
     <a class="btn secondary" href="/v3/risk/${encodeURIComponent(r.run_id)}/geotiff?name=${encodeURIComponent(`depth|${r.scenarios[0]}|${r.rps[r.rps.length - 1]}|base`)}">GeoTIFF (QGIS)</a></div>`;
@@ -189,6 +190,18 @@ async function runLst() {
   } catch (err) { out.innerHTML = `<p class="error">${esc(err.message)}</p>`; }
 }
 
+async function showStreet() {
+  const c = siteCenter(), box = $("#street");
+  box.innerHTML = `<p class="note">Suche offene Straßenbilder …</p>`;
+  try {
+    const r = await api(`/v6/street?lon=${c.lon}&lat=${c.lat}&radius=120`);
+    if (!r.images.length) { box.innerHTML = `<p class="note">${esc(r.error || "Keine offenen Straßenbilder im Umkreis von 120 m.")} Eigene Fotos lassen sich bei Panoramax hochladen.</p>`; return; }
+    box.innerHTML = `<div class="street-strip">${r.images.slice(0, 6).map((im) => `<a href="${esc(im.viewer)}" target="_blank" rel="noopener noreferrer" title="${esc(im.date)} · © ${esc(im.author || "")} · ${esc(im.license || "")}">
+      <img src="${esc(im.thumb)}" alt="Straßenbild ${esc(im.date)}" loading="lazy"><small>${im.distance_m} m</small></a>`).join("")}</div>
+      <p class="note">Quelle: ${esc(r.sources.join(", "))}. Klick öffnet den Panoramax-Viewer.</p>`;
+  } catch (err) { box.innerHTML = `<p class="note">Straßenbilder nicht erreichbar: ${esc(err.message)}</p>`; }
+}
+
 async function showPlans() {
   const c = siteCenter(), out = $("#plans");
   out.innerHTML = `<div class="skeleton"></div>`;
@@ -209,7 +222,8 @@ document.addEventListener("gecaa:ready", () => {
   }));
   $("#heat-waves-btn").addEventListener("click", runWaves);
   $("#heat-lst-btn").addEventListener("click", runLst);
-  $("#plans-btn").addEventListener("click", showPlans);
+  $("#street-btn") && ($("#street-btn").onclick = showStreet);
+$("#plans-btn").addEventListener("click", showPlans);
   $("#rain-swmm").addEventListener("change", async (e) => {
     const f = e.target.files[0];
     if (!f) { M4.swmm = null; return; }

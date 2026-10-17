@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>GECAA · Digitaler Zwilling</title>
+<!-- CesiumJS 1.146 (Apache-2.0), bundled locally under /static/vendor/cesium -->
+<script>window.CESIUM_BASE_URL = "/static/vendor/cesium/";</script>
+<link rel="stylesheet" href="/static/vendor/cesium/Widgets/widgets.css">
+<link rel="stylesheet" href="/static/twin.css">
+</head>
+<body>
+<div id="cv" aria-label="3D-Ansicht"></div>
+<div id="split" hidden><span>ohne Maßnahmen</span><i></i><span>mit Maßnahmen</span></div>
+<aside class="panel" id="panel">
+  <header><a href="/" class="back" aria-label="Zur Karte">←</a><div><strong>Digitaler Zwilling</strong><small id="sub">lädt …</small></div></header>
+  <div class="ctl">
+    <label>Klima <select id="sc"></select></label>
+    <label>Regen <select id="rp"></select></label>
+  </div>
+  <div class="seg" role="group" aria-label="Variante" id="variant">
+    <button type="button" data-v="base" aria-pressed="true">ohne Maßnahmen</button>
+    <button type="button" data-v="measure" aria-pressed="false">mit Maßnahmen</button>
+    <button type="button" data-v="split" aria-pressed="false">Vergleich</button>
+  </div>
+  <label class="row">Wasser-Deckkraft <input type="range" id="alpha" min="0" max="1" step="0.05" value="0.85"></label>
+  <div id="tl" hidden>
+    <h3>Zeitachse <small id="tl-name"></small></h3>
+    <div class="row"><button type="button" id="play" class="btn sm" aria-label="Abspielen">▶</button>
+      <input type="range" id="tl-r" min="0" max="100" value="0" aria-label="Datum"></div>
+    <p id="tl-t" class="note"></p>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div id="info" class="info" hidden></div>
+  <p class="note src" id="src"></p>
+</aside>
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-label="Straßenbild">
+  <figure><img id="m-img" alt="Straßenbild"><figcaption id="m-cap"></figcaption></figure>
+  <button type="button" class="close" id="m-close" aria-label="Schließen">×</button>
+</div>
+<script src="/static/vendor/cesium/Cesium.js"></script>
+<script src="/static/twin.js"></script>
+</body>
+</html>

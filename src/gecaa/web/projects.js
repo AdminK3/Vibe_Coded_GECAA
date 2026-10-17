@@ -92,7 +92,7 @@ function overview() {
       ${kpi("Betroffene Gebäude", r.buildings_affected == null ? "OFFEN" : `${r.buildings_affected} von ${r.buildings_total}`, r.rp_max ? `${r.rp_max}-jährlicher Regen` : "")}
       ${kpi("Kosten (Eingabe)", eur(P.costs_total), "netto")}
     </div>
-    ${r.run_id ? "" : `<p class="note">Kein Starkregen-Ergebnis verknüpft – Risikowerte OFFEN.</p>`}
+    ${r.run_id ? `<p><a class="btn secondary sm" href="/zwilling?run=${encodeURIComponent(r.run_id)}&project=${encodeURIComponent(P.id)}" target="_blank" rel="noopener">Im digitalen Zwilling ansehen (mit Zeitachse)</a></p>` : `<p class="note">Kein Starkregen-Ergebnis verknüpft – Risikowerte OFFEN.</p>`}
     <div class="cols">
       <div class="card"><h3>Prüfung des Plans</h3>${checksHtml(P.checks)}</div>
       <div class="card"><h3>Nächste Aufgaben</h3>${next.length ? `<ul class="clean">${next.map((x) => `<li>${esc(x.text)}<small>${esc(x.ph)} · fällig ${esc(dde(x.due))}</small></li>`).join("")}</ul>` : `<p class="note">Alles erledigt.</p>`}</div>

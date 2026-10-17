@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: Apache-2.0 — GECAA digital twin */
+:root { --ink: #10202b; --muted: #5a6b77; --paper: rgba(255,255,255,.94); --line: #d5dee5; --accent: #0b6aa2; --bg: #e8eef2; }
+@media (prefers-color-scheme: dark) { :root { --ink: #e4ecf1; --muted: #9db0bd; --paper: rgba(22,33,42,.94); --line: #2b3a45; --accent: #5fb0e6; --bg: #0f171d; } }
+html, body { margin: 0; height: 100%; background: var(--bg); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
+#cv { position: absolute; inset: 0; }
+.cesium-viewer-bottom { left: auto; right: 6px; }
+.panel { position: absolute; top: 12px; left: 12px; width: 330px; max-height: calc(100% - 24px); overflow: auto; background: var(--paper);
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0,0,0,.18); box-sizing: border-box; }
+.panel header { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.panel header small { display: block; color: var(--muted); font-size: 12px; }
+.back { text-decoration: none; color: var(--accent); font-size: 20px; }
+.ctl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ctl label, .row { font-size: 12.5px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+.row { flex-direction: row; align-items: center; gap: 8px; margin: 8px 0; }
+.row input[type=range] { flex: 1; }
+select { padding: 5px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.seg { display: flex; margin: 10px 0 4px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--ink); padding: 7px 4px; font-size: 12.5px; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--accent); color: #fff; }
+.seg button:disabled { opacity: .4; cursor: not-allowed; }
+.btn { border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+h3 { font-size: 13px; margin: 12px 0 4px; } h3 small { color: var(--muted); font-weight: 500; }
+.note { font-size: 12px; color: var(--muted); margin: 4px 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; margin: 10px 0; }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.info { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 6px; }
+.info h4 { margin: 0 0 4px; font-size: 14px; }
+.info table { width: 100%; font-size: 12.5px; border-collapse: collapse; }
+.info td { padding: 2px 0; } .info td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px; }
+.strip button { border: 0; padding: 0; background: none; cursor: zoom-in; position: relative; }
+.strip img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 5px; display: block; }
+.strip small { position: absolute; left: 3px; bottom: 3px; background: rgba(0,0,0,.6); color: #fff; font-size: 10px; padding: 0 4px; border-radius: 3px; }
+.src { font-size: 10.5px; }
+#split { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; pointer-events: none; }
+#split i { position: absolute; top: 0; bottom: 0; left: -1px; width: 3px; background: #fff; box-shadow: 0 0 6px rgba(0,0,0,.5); pointer-events: auto; cursor: ew-resize; }
+#split span { position: absolute; top: 12px; white-space: nowrap; background: rgba(0,0,0,.6); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+#split span:first-child { right: 10px; } #split span:last-child { left: 10px; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal figure { margin: 0; max-width: 92vw; max-height: 90vh; }
+.modal img { max-width: 92vw; max-height: 80vh; display: block; border-radius: 6px; }
+.modal figcaption { color: #ddd; font-size: 12.5px; margin-top: 6px; }
+.modal figcaption a { color: #9cd3ff; }
+.modal .close { position: absolute; top: 14px; right: 18px; font-size: 28px; color: #fff; background: none; border: 0; cursor: pointer; }
+@media (max-width: 640px) { .panel { width: auto; right: 12px; max-height: 46%; top: auto; bottom: 12px; } }
+[hidden] { display: none !important; }

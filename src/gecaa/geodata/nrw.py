@@ -480,6 +480,60 @@ class NRWProvider:
                 out[str(key)] = round(max(hs), 2)
         return out
 
+    @staticmethod
+    def parse_lod2_surfaces(doc: dict, max_buildings: int = 1500) -> dict[str, list[dict]]:
+        """CityJSON -> {ALKIS oid: [{'t': 'roof'|'wall', 'ring': [[lon, lat, h], ...]}, ...]}.
+
+        Verified live (Mettmann, 2026-10-17): referenceSystem CRS84h, integer vertices with transform
+        scale/translate, LoD2 `Solid` geometries with semantics (RoofSurface, WallSurface, GroundSurface,
+        ClosureSurface); BuildingParts point to their Building via `parents`. Ground and closure faces are
+        dropped; only exterior rings are kept."""
+        objs = doc.get("CityObjects", {}) or {}
+        tf = doc.get("transform") or {"scale": [1, 1, 1], "translate": [0, 0, 0]}
+        sc, tr = tf["scale"], tf["translate"]
+        verts = doc.get("vertices", []) or []
+
+        def key_of(oid):
+            o = objs.get(oid, {})
+            if o.get("parents"):
+                return key_of(o["parents"][0])
+            attrs = o.get("attributes", {}) or {}
+            ext = [r.get("name") for r in (attrs.get("externalReferences") or []) if isinstance(r, dict)]
+            return str(next((e for e in ext if e and e.startswith("DENW")), None) or oid)
+
+        kinds = {"RoofSurface": "roof", "WallSurface": "wall"}
+        out: dict[str, list[dict]] = {}
+        for oid, o in objs.items():
+            for g in o.get("geometry", []) or []:
+                b, sem = g.get("boundaries") or [], g.get("semantics") or {}
+                surfs = sem.get("surfaces") or []
+                if g.get("type") == "Solid":
+                    faces = [(f, (sem.get("values") or [[None] * len(b[0])])[0][i]) for i, f in enumerate(b[0] if b else [])]
+                elif g.get("type") in ("MultiSurface", "CompositeSurface"):
+                    vals = sem.get("values") or [None] * len(b)
+                    faces = list(zip(b, vals))
+                else:
+                    continue
+                for face, si in faces:
+                    t = kinds.get((surfs[si] or {}).get("type")) if si is not None and si < len(surfs) else None
+                    if not t or not face:
+                        continue
+                    ring = [[round(verts[v][0] * sc[0] + tr[0], 7), round(verts[v][1] * sc[1] + tr[1], 7),
+                             round(verts[v][2] * sc[2] + tr[2], 2)] for v in face[0] if v < len(verts)]
+                    if len(ring) >= 3:
+                        out.setdefault(key_of(oid), []).append({"t": t, "ring": ring})
+            if len(out) >= max_buildings:
+                break
+        return out
+
+    def lod2_surfaces(self, bbox_utm) -> dict[str, list[dict]]:
+        """LoD2 roof and wall faces in a UTM32 box (OGC API 3dg, CityJSON, dl-de/zero-2-0); {} when offline."""
+        try:
+            text = self._get(self.LOD2_API, {"f": "cityjson", "bbox": self._bbox_crs84(bbox_utm), "limit": "2000"})
+            return self.parse_lod2_surfaces(json.loads(text))
+        except (httpx.HTTPError, ValueError, OSError, KeyError, IndexError):
+            return {}
+
     def building_heights(self, bbox_utm, alkis_fallback: bool = True) -> dict[str, dict]:
         """Building heights in a UTM32 box: {ALKIS oid: {'height_m', 'method'}}.
 
