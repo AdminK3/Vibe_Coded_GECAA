@@ -462,14 +462,16 @@ class NRWProvider:
         """CityJSON (1.1) -> {ALKIS oid: max measuredHeight (m)} over Building and its BuildingParts.
 
         Verified on a live sample (Münster, 2026-10): BuildingPart attributes carry `measuredHeight`;
-        the parent Building carries the ALKIS id ("DENW..AL...") as `name`. No storey attribute."""
+        the ALKIS id ("DENW..AL...") sits in attributes.externalReferences[].name (live check 2026-10-17).
+        No storey attribute."""
         objs = doc.get("CityObjects", {}) or {}
         out: dict[str, float] = {}
         for oid, o in objs.items():
             if o.get("type") != "Building":
                 continue
             attrs = o.get("attributes", {}) or {}
-            key = o.get("name") or attrs.get("name") or oid
+            ext = [r.get("name") for r in (attrs.get("externalReferences") or []) if isinstance(r, dict)]
+            key = next((e for e in ext if e and e.startswith("DENW")), None) or o.get("name") or attrs.get("name") or oid
             hs = [attrs.get("measuredHeight")]
             for cid in o.get("children", []) or []:
                 hs.append((objs.get(cid, {}).get("attributes") or {}).get("measuredHeight"))
